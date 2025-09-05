@@ -1,9 +1,11 @@
 steps:
-
   # Step 1: Compile and package the app
   - id: "Build with Maven"
     name: 'gcr.io/cloud-builders/mvn'
     args: ['clean', 'package']
+    volumes:
+      - name: 'maven-cache'
+        path: '/root/.m2'
 
   # Step 1.5: List workspace and target directory to verify JAR creation
   - id: "List Workspace"
@@ -15,12 +17,19 @@ steps:
         ls -l
         echo "\nListing target directory:"
         ls -l target
-        
+
   # Step 2: Run tests
   - id: "Run Tests"
     name: 'gcr.io/cloud-builders/mvn'
     args: ['test']
+    volumes:
+      - name: 'maven-cache'
+        path: '/root/.m2'
 
+# 👇 Enable build cache
 options:
   logging: CLOUD_LOGGING_ONLY
+
+caches:
+  - path: /root/.m2
 
