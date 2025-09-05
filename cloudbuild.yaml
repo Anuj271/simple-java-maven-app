@@ -4,22 +4,14 @@ steps:
     name: 'maven:3.9.9-eclipse-temurin-21'
     entrypoint: mvn
     args: ['clean', 'package']
-    volumes:
-      - name: 'maven-cache'
-        path: '/root/.m2'
 
   # Step 2: Run tests
   - id: "Run Tests"
     name: 'maven:3.9.9-eclipse-temurin-21'
     entrypoint: mvn
     args: ['test']
-    volumes:
-      - name: 'maven-cache'
-        path: '/root/.m2'
 
+# Logging fix for custom service account
 options:
   logging: CLOUD_LOGGING_ONLY
-
-caches:
-  - path: /root/.m2
 
