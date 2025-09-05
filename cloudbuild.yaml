@@ -1,32 +1,22 @@
 steps:
-  # Step 1: Compile and package the app
+  # Step 1: Compile and package with Java 21 + Maven 3.9.9
   - id: "Build with Maven"
-    name: 'gcr.io/cloud-builders/mvn'
+    name: 'maven:3.9.9-eclipse-temurin-21'
+    entrypoint: mvn
     args: ['clean', 'package']
     volumes:
       - name: 'maven-cache'
         path: '/root/.m2'
 
-  # Step 1.5: List workspace and target directory to verify JAR creation
-  - id: "List Workspace"
-    name: 'gcr.io/cloud-builders/bash'
-    args:
-      - '-c'
-      - |
-        echo "Listing workspace root:"
-        ls -l
-        echo "\nListing target directory:"
-        ls -l target
-
   # Step 2: Run tests
   - id: "Run Tests"
-    name: 'gcr.io/cloud-builders/mvn'
+    name: 'maven:3.9.9-eclipse-temurin-21'
+    entrypoint: mvn
     args: ['test']
     volumes:
       - name: 'maven-cache'
         path: '/root/.m2'
 
-# 👇 Enable build cache
 options:
   logging: CLOUD_LOGGING_ONLY
 
