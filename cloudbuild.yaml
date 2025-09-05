@@ -1,0 +1,23 @@
+steps:
+
+  # Step 1: Compile and package the app
+  - id: "Build with Maven"
+    name: 'gcr.io/cloud-builders/mvn'
+    args: ['clean', 'package']
+
+  # Step 1.5: List workspace and target directory to verify JAR creation
+  - id: "List Workspace"
+    name: 'gcr.io/cloud-builders/bash'
+    args:
+      - '-c'
+      - |
+        echo "Listing workspace root:"
+        ls -l
+        echo "\nListing target directory:"
+        ls -l target
+        
+  # Step 2: Run tests
+  - id: "Run Tests"
+    name: 'gcr.io/cloud-builders/mvn'
+    args: ['test']
+
