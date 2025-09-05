@@ -5,13 +5,23 @@ steps:
     entrypoint: mvn
     args: ['clean', 'package']
 
+  # Step 1.5: List workspace + target directory to verify JAR
+  - id: "List Workspace"
+    name: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "Listing workspace root:"
+        ls -l
+        echo "--------------------------"
+        echo "Listing target directory:"
+        ls -l target || echo "No target directory found!"
+
   # Step 2: Run tests
   - id: "Run Tests"
     name: 'maven:3.9.9-eclipse-temurin-21'
     entrypoint: mvn
     args: ['test']
 
-# Logging fix for custom service account
 options:
   logging: CLOUD_LOGGING_ONLY
-
