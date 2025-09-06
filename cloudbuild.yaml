@@ -5,38 +5,36 @@ steps:
     entrypoint: mvn
     args: ['clean', 'package']
 
-  # Step 1.5: List workspace + target directory to verify JAR
-  - id: "List Workspace"
-    name: 'bash'
-    args:
-      - '-c'
-      - |
-        echo "Listing workspace root:"
-        ls -l
-        echo "--------------------------"
-        echo "Listing target directory:"
-        ls -l target || echo "No target directory found!"
-
   # Step 2: Run tests
   - id: "Run Tests"
     name: 'maven:3.9.9-eclipse-temurin-21'
     entrypoint: mvn
     args: ['test']
 
-  # Step 3: Build Docker image from Dockerfile
+  # Step 3: Authenticate to Docker Hub
+  - id: "Docker Hub Auth"
+    name: 'gcr.io/cloud-builders/docker'
+    entrypoint: 'bash'
+    args:
+      - -c
+      - |
+        docker login -u $(gcloud secrets versions access latest --secret="dockerhub-username") \
+          -p $(gcloud secrets versions access latest --secret="dockerhub-password")
+
+  # Step 4: Build Docker image
   - id: "Build Docker Image"
     name: 'gcr.io/cloud-builders/docker'
     args:
       [
         "build",
-        "-t", "gcr.io/my-hello-cb/myapp:2.0-SNAPSHOT",
+        "-t", "docker.io/my-dockerhub-user/myapp:2.0-SNAPSHOT",
         "."
       ]
 
-  # Step 4 (optional): Push Docker image to Container Registry / Artifact Registry
+  # Step 5: Push Docker image
   - id: "Push Docker Image"
     name: 'gcr.io/cloud-builders/docker'
-    args: ["push", "gcr.io/my-hello-cb/myapp:2.0-SNAPSHOT"]
+    args: ["push", "docker.io/my-dockerhub-user/myapp:2.0-SNAPSHOT"]
 
 options:
   logging: CLOUD_LOGGING_ONLY
