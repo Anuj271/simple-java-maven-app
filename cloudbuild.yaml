@@ -1,5 +1,12 @@
+availableSecrets:
+  secretManager:
+  - versionName: projects/my-hello-cb/secrets/dockerhub-username/versions/latest
+    env: DOCKERHUB_USERNAME
+  - versionName: projects/my-hello-cb/secrets/dockerhub-password/versions/latest
+    env: DOCKERHUB_PASSWORD
+
 steps:
-  # Step 1: Compile and package with Java 21 + Maven 3.9.9
+  # Step 1: Build JAR with Maven
   - id: "Build with Maven"
     name: 'maven:3.9.9-eclipse-temurin-21'
     entrypoint: mvn
@@ -11,17 +18,17 @@ steps:
     entrypoint: mvn
     args: ['test']
 
-  # Step 3: Authenticate to Docker Hub
-  - id: "Docker Hub Auth"
+  # Step 3: Docker login (non-interactive)
+  - id: "Docker Hub Login"
     name: 'gcr.io/cloud-builders/docker'
     entrypoint: 'bash'
+    secretEnv: ['DOCKERHUB_USERNAME', 'DOCKERHUB_PASSWORD']
     args:
       - -c
       - |
-        docker login -u $(gcloud secrets versions access latest --secret="dockerhub-username") \
-          -p $(gcloud secrets versions access latest --secret="dockerhub-password")
+        echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
 
-  # Step 4: Build Docker image
+  # Step 4: Build image
   - id: "Build Docker Image"
     name: 'gcr.io/cloud-builders/docker'
     args:
@@ -31,7 +38,7 @@ steps:
         "."
       ]
 
-  # Step 5: Push Docker image
+  # Step 5: Push image
   - id: "Push Docker Image"
     name: 'gcr.io/cloud-builders/docker'
     args: ["push", "docker.io/my-dockerhub-user/myapp:2.0-SNAPSHOT"]
