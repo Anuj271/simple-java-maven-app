@@ -1,26 +1,42 @@
 steps:
-
-  # Step 1: Compile and package the app
+  # Step 1: Compile and package with Java 21 + Maven 3.9.9
   - id: "Build with Maven"
-    name: 'gcr.io/cloud-builders/mvn'
+    name: 'maven:3.9.9-eclipse-temurin-21'
+    entrypoint: mvn
     args: ['clean', 'package']
 
-  # Step 1.5: List workspace and target directory to verify JAR creation
+  # Step 1.5: List workspace + target directory to verify JAR
   - id: "List Workspace"
-    name: 'gcr.io/cloud-builders/bash'
+    name: 'bash'
     args:
       - '-c'
       - |
         echo "Listing workspace root:"
         ls -l
-        echo "\nListing target directory:"
-        ls -l target
-        
+        echo "--------------------------"
+        echo "Listing target directory:"
+        ls -l target || echo "No target directory found!"
+
   # Step 2: Run tests
   - id: "Run Tests"
-    name: 'gcr.io/cloud-builders/mvn'
+    name: 'maven:3.9.9-eclipse-temurin-21'
+    entrypoint: mvn
     args: ['test']
+
+  # Step 3: Build Docker image from Dockerfile
+  - id: "Build Docker Image"
+    name: 'gcr.io/cloud-builders/docker'
+    args:
+      [
+        "build",
+        "-t", "gcr.io/my-hello-cb/myapp:2.0-SNAPSHOT",
+        "."
+      ]
+
+  # Step 4 (optional): Push Docker image to Container Registry / Artifact Registry
+  - id: "Push Docker Image"
+    name: 'gcr.io/cloud-builders/docker'
+    args: ["push", "gcr.io/my-hello-cb/myapp:2.0-SNAPSHOT"]
 
 options:
   logging: CLOUD_LOGGING_ONLY
-
