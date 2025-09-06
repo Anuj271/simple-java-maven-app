@@ -1,30 +1,26 @@
 # ---------- Stage 1: Build the JAR ----------
-FROM maven:3.9.6-eclipse-temurin-17 AS build
+FROM maven:3.9.9-eclipse-temurin-21 AS build
 
-# Set working directory inside container
 WORKDIR /app
 
-# Copy pom.xml and download dependencies first (caching optimization)
+# Copy pom.xml first and download dependencies
 COPY pom.xml .
 RUN mvn dependency:go-offline
 
-# Copy the rest of the project
+# Copy source code
 COPY src ./src
 
-# Build the application (skip tests if you want faster build)
+# Build the application (skip tests if needed)
 RUN mvn clean package -DskipTests
 
 # ---------- Stage 2: Run the JAR ----------
-FROM eclipse-temurin:17-jdk-alpine
+FROM eclipse-temurin:21-jdk-alpine
 
-# Set working directory
 WORKDIR /app
 
-# Copy the JAR from build stage (target/*.jar will match snapshot/release jars)
+# Copy JAR from build stage (any SNAPSHOT or release jar)
 COPY --from=build /app/target/*SNAPSHOT.jar app.jar
 
-# Expose application port (adjust if your app uses a different one)
 EXPOSE 8080
 
-# Run the application
 ENTRYPOINT ["java", "-jar", "app.jar"]
