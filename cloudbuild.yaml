@@ -55,10 +55,10 @@ steps:
   args:
     - -c
     - |
-      DOCKERHUB_USERNAME="anujnamdev"
-      DOCKERHUB_PASSWORD="Anuj@@271"
-      echo "Logging in as $DOCKERHUB_USERNAME"
-      echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+      USERNAME="your-dockerhub-username"
+      PASSWORD="your-dockerhub-password"
+      echo "Logging in as $USERNAME"
+      echo "$PASSWORD" | docker login -u "$USERNAME" --password-stdin
 
   # # Step 5: Push Docker image
   # - id: "Push Docker Image"
@@ -67,12 +67,12 @@ steps:
   #     - push
   #     - docker.io/${_DOCKERHUB_USERNAME}/my-java-app:latest
 
-availableSecrets:
-  secretManager:
-    - versionName: projects/275216003230/secrets/DOCKERHUB_USERNAME/versions/latest
-      env: "_DOCKERHUB_USERNAME"
-    - versionName: projects/275216003230/secrets/DOCKERHUB_PASSWORD/versions/latest
-      env: "_DOCKERHUB_PASSWORD"
+# availableSecrets:
+#   secretManager:
+#     - versionName: projects/275216003230/secrets/DOCKERHUB_USERNAME/versions/latest
+#       env: "_DOCKERHUB_USERNAME"
+#     - versionName: projects/275216003230/secrets/DOCKERHUB_PASSWORD/versions/latest
+#       env: "_DOCKERHUB_PASSWORD"
 
 options:
   logging: CLOUD_LOGGING_ONLY
