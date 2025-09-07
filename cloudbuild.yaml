@@ -1,5 +1,5 @@
 steps:
-  Step 1: Compile and package with Java 21 + Maven 3.9.9
+  # Step 1: Compile and package with Java 21 + Maven 3.9.9
   - id: "Build with Maven"
     name: 'maven:3.9.9-eclipse-temurin-21'
     entrypoint: mvn
