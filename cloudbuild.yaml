@@ -23,6 +23,20 @@ steps:
     entrypoint: mvn
     args: ['test']
 
+  # Step 3: Build Docker Image
+  - id: "Build Docker Image"
+    name: 'gcr.io/cloud-builders/docker'
+    args:
+      [
+        'build',
+        '-t', 'my-java-app:latest',
+        '.'
+      ]
+
+  # Step 4: Verify Docker Image
+  - id: "Verify Docker Image"
+    name: 'gcr.io/cloud-builders/docker'
+    args: ['images', 'my-java-app:latest']
   
 
 options:

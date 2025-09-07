@@ -1,26 +1,11 @@
-# ---------- Stage 1: Build the JAR ----------
-FROM maven:3.9.9-eclipse-temurin-21 AS build
-
+FROM eclipse-temurin:21-jre
 WORKDIR /app
 
-# Copy pom.xml first and download dependencies
-COPY pom.xml .
-RUN mvn dependency:go-offline
+# Copy the JAR from Cloud Build output (or from builder stage if building locally)
+COPY target/*.jar app.jar
 
-# Copy source code
-COPY src ./src
-
-# Build the application (skip tests if needed)
-RUN mvn clean package -DskipTests
-
-# ---------- Stage 2: Run the JAR ----------
-FROM eclipse-temurin:21-jdk-alpine
-
-WORKDIR /app
-
-# Copy JAR from build stage (any SNAPSHOT or release jar)
-COPY --from=build /app/target/*SNAPSHOT.jar app.jar
-
+# Expose port (change if your app uses a different port)
 EXPOSE 8080
 
+# Run the application
 ENTRYPOINT ["java", "-jar", "app.jar"]
