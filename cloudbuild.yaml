@@ -38,23 +38,33 @@ steps:
     name: 'gcr.io/cloud-builders/docker'
     args: ['images', 'my-java-app:latest']
 
-  # Step 3: Docker Hub Login
-  - id: "Docker Hub Login"
-    name: "gcr.io/cloud-builders/docker"
+
+  - name: "gcr.io/cloud-builders/bash"
     entrypoint: "bash"
     secretEnv: ["_DOCKERHUB_USERNAME", "_DOCKERHUB_PASSWORD"]
     args:
       - -c
       - |
-        echo "Logging in as $_DOCKERHUB_USERNAME"
-        echo "$_DOCKERHUB_PASSWORD" | docker login -u "$_DOCKERHUB_USERNAME" --password-stdin
+        echo "USERNAME is: $_DOCKERHUB_USERNAME"
+        echo "PASSWORD is: $_DOCKERHUB_PASSWORD"
+
+  # Step 3: Docker Hub Login
+  # - id: "Docker Hub Login"
+  #   name: "gcr.io/cloud-builders/docker"
+  #   entrypoint: "bash"
+  #   secretEnv: ["_DOCKERHUB_USERNAME", "_DOCKERHUB_PASSWORD"]
+  #   args:
+  #     - -c
+  #     - |
+  #       echo "Logging in as $_DOCKERHUB_USERNAME"
+  #       echo "$_DOCKERHUB_PASSWORD" | docker login -u "$_DOCKERHUB_USERNAME" --password-stdin
       
-  # Step 5: Push Docker image
-  - id: "Push Docker Image"
-    name: "gcr.io/cloud-builders/docker"
-    args:
-      - push
-      - docker.io/${_DOCKERHUB_USERNAME}/my-java-app:latest
+  # # Step 5: Push Docker image
+  # - id: "Push Docker Image"
+  #   name: "gcr.io/cloud-builders/docker"
+  #   args:
+  #     - push
+  #     - docker.io/${_DOCKERHUB_USERNAME}/my-java-app:latest
 
 availableSecrets:
   secretManager:
