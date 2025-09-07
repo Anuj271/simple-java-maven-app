@@ -29,7 +29,7 @@ steps:
     args:
       [
         'build',
-        '-t', 'my-java-app:latest',
+        '-t', 'anujnadev/my-java-app:latest',
         '.'
       ]
 
