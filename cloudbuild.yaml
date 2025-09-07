@@ -33,7 +33,7 @@ steps:
   #       '.'
   #     ]
 
-  # # Step 4: Verify Docker Image
+  # # # Step 4: Verify Docker Image
   # - id: "Verify Docker Image"
   #   name: 'gcr.io/cloud-builders/docker'
   #   args: ['images', 'my-java-app:latest']
@@ -49,16 +49,16 @@ steps:
   #       echo "PASSWORD is: $_DOCKERHUB_PASSWORD"
 
 
-- id: "Docker Hub Login"
-  name: "gcr.io/cloud-builders/docker"
-  entrypoint: "bash"
-  args:
-    - -c
-    - |
-      DOCKERHUB_USERNAME="anujnamdev"
-      DOCKERHUB_PASSWORD="Anuj@@271"
-      echo "Logging in as $DOCKERHUB_USERNAME"
-      echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+  - id: "Docker Hub Login"
+    name: "gcr.io/cloud-builders/docker"
+    entrypoint: "bash"
+    args:
+      - -c
+      - |
+        DOCKERHUB_USERNAME="anujnamdev"
+        DOCKERHUB_PASSWORD="Anuj@@271"
+        echo "Logging in as $DOCKERHUB_USERNAME"
+        echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
 
   # # Step 5: Push Docker image
   # - id: "Push Docker Image"
