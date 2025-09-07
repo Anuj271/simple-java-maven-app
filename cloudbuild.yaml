@@ -39,8 +39,8 @@ steps:
     args: ['images', 'my-java-app:latest']
 
 
-  - name: "bash"
-    entrypoint: "bash"
+  - name: "gcr.io/cloud-builders/busybox"
+    entrypoint: "sh"
     secretEnv: ["_DOCKERHUB_USERNAME", "_DOCKERHUB_PASSWORD"]
     args:
       - -c
@@ -65,7 +65,7 @@ steps:
   #   args:
   #     - push
   #     - docker.io/${_DOCKERHUB_USERNAME}/my-java-app:latest
-secretEnv: ["_DOCKERHUB_USERNAME", "_DOCKERHUB_PASSWORD"]
+
 availableSecrets:
   secretManager:
     - versionName: projects/275216003230/secrets/DOCKERHUB_USERNAME/versions/latest
