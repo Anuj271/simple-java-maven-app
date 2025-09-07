@@ -101,11 +101,11 @@ options:
 #       - .
 
   # Step 5: Push Docker image
-  - id: "Push Docker Image"
-    name: "gcr.io/cloud-builders/docker"
-    args:
-      - push
-      - docker.io/${_DOCKERHUB_USERNAME}/my-java-app:latest
+  # - id: "Push Docker Image"
+  #   name: "gcr.io/cloud-builders/docker"
+  #   args:
+  #     - push
+  #     - docker.io/${_DOCKERHUB_USERNAME}/my-java-app:latest
 
 # availableSecrets:
 #   secretManager:
