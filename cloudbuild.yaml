@@ -42,13 +42,13 @@ steps:
   - id: "Docker Hub Login"
     name: "gcr.io/cloud-builders/docker"
     entrypoint: "bash"
-    secretEnv: ["DOCKERHUB_USERNAME", "DOCKERHUB_PASSWORD"]
+    secretEnv: ["_DOCKERHUB_USERNAME", "_DOCKERHUB_PASSWORD"]
     args:
       - -c
       - |
-        echo "Logging in as $DOCKERHUB_USERNAME"
-        echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-
+        echo "Logging in as $_DOCKERHUB_USERNAME"
+        echo "$_DOCKERHUB_PASSWORD" | docker login -u "$_DOCKERHUB_USERNAME" --password-stdin
+      
   # Step 5: Push Docker image
   - id: "Push Docker Image"
     name: "gcr.io/cloud-builders/docker"
@@ -59,9 +59,9 @@ steps:
 availableSecrets:
   secretManager:
     - versionName: projects/275216003230/secrets/DOCKERHUB_USERNAME/versions/latest
-      env: "DOCKERHUB_USERNAME"
+      env: "_DOCKERHUB_USERNAME"
     - versionName: projects/275216003230/secrets/DOCKERHUB_PASSWORD/versions/latest
-      env: "DOCKERHUB_PASSWORD"
+      env: "_DOCKERHUB_PASSWORD"
 
 options:
   logging: CLOUD_LOGGING_ONLY
