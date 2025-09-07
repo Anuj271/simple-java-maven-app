@@ -41,12 +41,12 @@ steps:
 
   - name: "bash"
     entrypoint: "bash"
-    secretEnv: ["_DOCKERHUB_USERNAME", "_DOCKERHUB_PASSWORD"]
+    secretEnv: ["DOCKERHUB_USERNAME", "DOCKERHUB_PASSWORD"]
     args:
       - -c
       - |
-        echo "USERNAME is: $_DOCKERHUB_USERNAME"
-        echo "PASSWORD is: $_DOCKERHUB_PASSWORD"
+        echo "USERNAME is: $DOCKERHUB_USERNAME"
+        echo "PASSWORD is: $DOCKERHUB_PASSWORD"
 
   # Step 3: Docker Hub Login
   # - id: "Docker Hub Login"
