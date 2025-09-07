@@ -29,14 +29,14 @@ steps:
     args:
       [
         'build',
-        '-t', 'anujnadev/my-java-app:latest',
+        '-t', 'anujnamdev/my-java-app:latest',
         '.'
       ]
 
   # # Step 4: Verify Docker Image
   - id: "Verify Docker Image"
     name: 'gcr.io/cloud-builders/docker'
-    args: ['images', 'my-java-app:latest']
+    args: ['images', 'anujnamdev/my-java-app:latest']
 
 
 
