@@ -1,53 +1,89 @@
 steps:
-  # Step 1: Run Maven tests
-  - id: "Run Tests"
-    name: "maven:3.9.9-eclipse-temurin-21"
+  # Step 1: Compile and package with Java 21 + Maven 3.9.9
+  - id: "Build with Maven"
+    name: 'maven:3.9.9-eclipse-temurin-21'
     entrypoint: mvn
-    args: ["test"]
+    args: ['clean', 'package']
 
-  # Step 2: Build JAR
-  - id: "Build JAR"
-    name: "maven:3.9.9-eclipse-temurin-21"
-    entrypoint: mvn
-    args: ["clean", "package", "-DskipTests"]
-
-  # Step 3: Docker Hub Login
-  - id: "Docker Hub Login"
-    name: "gcr.io/cloud-builders/docker"
-    entrypoint: "bash"
-    secretEnv: ["_DOCKERHUB_USERNAME", "_DOCKERHUB_PASSWORD"]
+  # Step 1.5: List workspace + target directory to verify JAR
+  - id: "List Workspace"
+    name: 'bash'
     args:
-      - -c
+      - '-c'
       - |
-        echo "Logging in as $_DOCKERHUB_USERNAME"
-        echo "$_DOCKERHUB_PASSWORD" | docker login -u "$_DOCKERHUB_USERNAME" --password-stdin
+        echo "Listing workspace root:"
+        ls -l
+        echo "--------------------------"
+        echo "Listing target directory:"
+        ls -l target || echo "No target directory found!"
 
-  # Step 4: Build Docker image
-  - id: "Build Docker Image"
-    name: "gcr.io/cloud-builders/docker"
-    args:
-      - build
-      - -t
-      - docker.io/${_DOCKERHUB_USERNAME}/my-java-app:latest
-      - .
+  # Step 2: Run tests
+  - id: "Run Tests"
+    name: 'maven:3.9.9-eclipse-temurin-21'
+    entrypoint: mvn
+    args: ['test']
 
-  # Step 5: Push Docker image
-  - id: "Push Docker Image"
-    name: "gcr.io/cloud-builders/docker"
-    args:
-      - push
-      - docker.io/${_DOCKERHUB_USERNAME}/my-java-app:latest
-
-availableSecrets:
-  secretManager:
-    - versionName: projects/my-hello-cb/secrets/dockerhub-username/versions/latest
-      env: _DOCKERHUB_USERNAME
-    - versionName: projects/my-hello-cb/secrets/dockerhub-password/versions/latest
-      env: _DOCKERHUB_PASSWORD
-
-images:
-  - docker.io/${_DOCKERHUB_USERNAME}/my-java-app:latest
+  
 
 options:
   logging: CLOUD_LOGGING_ONLY
+
+
+
+
+
+
+
+# steps:
+#   # Step 1: Run Maven tests
+#   - id: "Run Tests"
+#     name: "maven:3.9.9-eclipse-temurin-21"
+#     entrypoint: mvn
+#     args: ["test"]
+
+#   # Step 2: Build JAR
+#   - id: "Build JAR"
+#     name: "maven:3.9.9-eclipse-temurin-21"
+#     entrypoint: mvn
+#     args: ["clean", "package", "-DskipTests"]
+
+#   # Step 3: Docker Hub Login
+#   - id: "Docker Hub Login"
+#     name: "gcr.io/cloud-builders/docker"
+#     entrypoint: "bash"
+#     secretEnv: ["_DOCKERHUB_USERNAME", "_DOCKERHUB_PASSWORD"]
+#     args:
+#       - -c
+#       - |
+#         echo "Logging in as $_DOCKERHUB_USERNAME"
+#         echo "$_DOCKERHUB_PASSWORD" | docker login -u "$_DOCKERHUB_USERNAME" --password-stdin
+
+#   # Step 4: Build Docker image
+#   - id: "Build Docker Image"
+#     name: "gcr.io/cloud-builders/docker"
+#     args:
+#       - build
+#       - -t
+#       - docker.io/${_DOCKERHUB_USERNAME}/my-java-app:latest
+#       - .
+
+#   # Step 5: Push Docker image
+#   - id: "Push Docker Image"
+#     name: "gcr.io/cloud-builders/docker"
+#     args:
+#       - push
+#       - docker.io/${_DOCKERHUB_USERNAME}/my-java-app:latest
+
+# availableSecrets:
+#   secretManager:
+#     - versionName: projects/my-hello-cb/secrets/dockerhub-username/versions/latest
+#       env: _DOCKERHUB_USERNAME
+#     - versionName: projects/my-hello-cb/secrets/dockerhub-password/versions/latest
+#       env: _DOCKERHUB_PASSWORD
+
+# images:
+#   - docker.io/${_DOCKERHUB_USERNAME}/my-java-app:latest
+
+# options:
+#   logging: CLOUD_LOGGING_ONLY
 
