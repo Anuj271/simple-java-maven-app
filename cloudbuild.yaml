@@ -12,7 +12,7 @@ steps:
     args: ['clean', 'package', '-DskipTests']
 
   # Step 3: Docker Hub Login
-  - id: "Docker Hub Login"
+    - id: "Docker Hub Login"
     name: 'gcr.io/cloud-builders/docker'
     entrypoint: 'bash'
     secretEnv: ['_DOCKERHUB_USERNAME', '_DOCKERHUB_PASSWORD']
