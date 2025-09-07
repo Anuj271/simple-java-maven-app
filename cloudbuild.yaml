@@ -1,21 +1,21 @@
 steps:
   # Step 1: Run Maven tests
   - id: "Run Tests"
-    name: 'maven:3.9.9-eclipse-temurin-21'
+    name: "maven:3.9.9-eclipse-temurin-21"
     entrypoint: mvn
-    args: ['test']
+    args: ["test"]
 
   # Step 2: Build JAR
   - id: "Build JAR"
-    name: 'maven:3.9.9-eclipse-temurin-21'
+    name: "maven:3.9.9-eclipse-temurin-21"
     entrypoint: mvn
-    args: ['clean', 'package', '-DskipTests']
+    args: ["clean", "package", "-DskipTests"]
 
   # Step 3: Docker Hub Login
-    - id: "Docker Hub Login"
-    name: 'gcr.io/cloud-builders/docker'
-    entrypoint: 'bash'
-    secretEnv: ['_DOCKERHUB_USERNAME', '_DOCKERHUB_PASSWORD']
+  - id: "Docker Hub Login"
+    name: "gcr.io/cloud-builders/docker"
+    entrypoint: "bash"
+    secretEnv: ["_DOCKERHUB_USERNAME", "_DOCKERHUB_PASSWORD"]
     args:
       - -c
       - |
@@ -24,7 +24,7 @@ steps:
 
   # Step 4: Build Docker image
   - id: "Build Docker Image"
-    name: 'gcr.io/cloud-builders/docker'
+    name: "gcr.io/cloud-builders/docker"
     args:
       - build
       - -t
@@ -33,17 +33,17 @@ steps:
 
   # Step 5: Push Docker image
   - id: "Push Docker Image"
-    name: 'gcr.io/cloud-builders/docker'
+    name: "gcr.io/cloud-builders/docker"
     args:
       - push
       - docker.io/${_DOCKERHUB_USERNAME}/my-java-app:latest
 
 availableSecrets:
   secretManager:
-  - versionName: projects/my-hello-cb/secrets/dockerhub-username/versions/latest
-    env: _DOCKERHUB_USERNAME
-  - versionName: projects/my-hello-cb/secrets/dockerhub-password/versions/latest
-    env: _DOCKERHUB_PASSWORD
+    - versionName: projects/my-hello-cb/secrets/dockerhub-username/versions/latest
+      env: _DOCKERHUB_USERNAME
+    - versionName: projects/my-hello-cb/secrets/dockerhub-password/versions/latest
+      env: _DOCKERHUB_PASSWORD
 
 images:
   - docker.io/${_DOCKERHUB_USERNAME}/my-java-app:latest
