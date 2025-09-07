@@ -56,7 +56,12 @@ steps:
       - push
       - docker.io/${_DOCKERHUB_USERNAME}/my-java-app:latest
 
-  
+availableSecrets:
+  secretManager:
+    - versionName: projects/my-hello-cb/secrets/dockerhub-username/versions/latest
+      env: _DOCKERHUB_USERNAME
+    - versionName: projects/my-hello-cb/secrets/dockerhub-password/versions/latest
+      env: _DOCKERHUB_PASSWORD
 
 options:
   logging: CLOUD_LOGGING_ONLY
