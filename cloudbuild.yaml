@@ -48,3 +48,6 @@ availableSecrets:
 images:
   - docker.io/${_DOCKERHUB_USERNAME}/my-java-app:latest
 
+options:
+  logging: CLOUD_LOGGING_ONLY
+
