@@ -33,15 +33,12 @@ steps:
         '.'
       ]
 
-  # # Step 4: Verify Docker Image
+  # Step 4: Verify Docker Image
   - id: "Verify Docker Image"
     name: 'gcr.io/cloud-builders/docker'
     args: ['images', 'anujnamdev/my-java-app:latest']
 
-
-
- 
-
+  # Step 5: Docker Hub Login
   - id: "Docker Hub Login"
     name: "gcr.io/cloud-builders/docker"
     entrypoint: "bash"
@@ -49,79 +46,30 @@ steps:
       - -c
       - "echo 'Logging in to Docker Hub' && echo 'Anuj@@271' | docker login -u 'anujnamdev' --password-stdin"
 
-  # Step 5: Push Docker image
+  # Step 6: Push Docker image
   - id: "Push Docker Image"
     name: "gcr.io/cloud-builders/docker"
     args:
       - push
       - docker.io/anujnamdev/my-java-app:latest
 
-# availableSecrets:
-#   secretManager:
-#     - versionName: projects/275216003230/secrets/DOCKERHUB_USERNAME/versions/latest
-#       env: "_DOCKERHUB_USERNAME"
-#     - versionName: projects/275216003230/secrets/DOCKERHUB_PASSWORD/versions/latest
-#       env: "_DOCKERHUB_PASSWORD"
+  # Step 7: Deploy to VM
+  - id: "Deploy to VM"
+    name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    entrypoint: "bash"
+    args:
+      - -c
+      - |
+        gcloud compute ssh anujnamdev271_gmail_com@my-docker-vm --zone=us-central1-a --command "
+          echo '>>> Cleaning old containers & images...'
+          sudo docker rm -f \$(sudo docker ps -aq) || true
+          sudo docker rmi -f anujnamdev/my-java-app:latest || true
+          echo '>>> Pulling latest image...'
+          sudo docker pull anujnamdev/my-java-app:latest
+          echo '>>> Running container...'
+          sudo docker run -d -p 8080:8080 --name my-java-app anujnamdev/my-java-app:latest
+        "
 
 options:
   logging: CLOUD_LOGGING_ONLY
-
-
-
-
-
-
-
-# steps:
-#   # Step 1: Run Maven tests
-#   - id: "Run Tests"
-#     name: "maven:3.9.9-eclipse-temurin-21"
-#     entrypoint: mvn
-#     args: ["test"]
-
-#   # Step 2: Build JAR
-#   - id: "Build JAR"
-#     name: "maven:3.9.9-eclipse-temurin-21"
-#     entrypoint: mvn
-#     args: ["clean", "package", "-DskipTests"]
-
-#   # Step 3: Docker Hub Login
-#   - id: "Docker Hub Login"
-#     name: "gcr.io/cloud-builders/docker"
-#     entrypoint: "bash"
-#     secretEnv: ["_DOCKERHUB_USERNAME", "_DOCKERHUB_PASSWORD"]
-#     args:
-#       - -c
-#       - |
-#         echo "Logging in as $_DOCKERHUB_USERNAME"
-#         echo "$_DOCKERHUB_PASSWORD" | docker login -u "$_DOCKERHUB_USERNAME" --password-stdin
-
-#   # Step 4: Build Docker image
-#   - id: "Build Docker Image"
-#     name: "gcr.io/cloud-builders/docker"
-#     args:
-#       - build
-#       - -t
-#       - docker.io/${_DOCKERHUB_USERNAME}/my-java-app:latest
-#       - .
-
-  # Step 5: Push Docker image
-  # - id: "Push Docker Image"
-  #   name: "gcr.io/cloud-builders/docker"
-  #   args:
-  #     - push
-  #     - docker.io/${_DOCKERHUB_USERNAME}/my-java-app:latest
-
-# availableSecrets:
-#   secretManager:
-#     - versionName: projects/my-hello-cb/secrets/dockerhub-username/versions/latest
-#       env: _DOCKERHUB_USERNAME
-#     - versionName: projects/my-hello-cb/secrets/dockerhub-password/versions/latest
-#       env: _DOCKERHUB_PASSWORD
-
-# images:
-#   - docker.io/${_DOCKERHUB_USERNAME}/my-java-app:latest
-
-# options:
-#   logging: CLOUD_LOGGING_ONLY
 
