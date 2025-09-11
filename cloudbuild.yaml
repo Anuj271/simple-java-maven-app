@@ -55,20 +55,23 @@ steps:
 
   # Step 7: Deploy to VM
   - id: "Deploy to VM"
-    name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
-    entrypoint: "bash"
-    args:
-      - -c
-      - |
-       gcloud compute ssh sa_275216003230@my-docker-vm --zone=us-central1-a --command "
-        echo '>>> Cleaning old containers & images...'
-        sudo docker rm -f \$(sudo docker ps -aq) || true
-        sudo docker rmi -f anujnamdev/my-java-app:latest || true
-        echo '>>> Pulling latest image...'
-        sudo docker pull anujnamdev/my-java-app:latest
-        echo '>>> Running container...'
-       sudo docker run -d -p 8080:8080 --name my-java-app anujnamdev/my-java-app:latest
-       "
+  name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+  entrypoint: "bash"
+  args:
+    - -c
+    - |
+      gcloud compute instances add-metadata my-docker-vm \
+        --zone=us-central1-a \
+        --metadata startup-script="#!/bin/bash
+          echo '>>> Cleaning old containers...'
+          docker rm -f \$(docker ps -aq) || true
+          docker rmi -f anujnamdev/my-java-app:latest || true
+          echo '>>> Pulling latest image...'
+          docker pull anujnamdev/my-java-app:latest
+          echo '>>> Running container...'
+          docker run -d -p 8080:8080 --name my-java-app anujnamdev/my-java-app:latest
+        "
+
 
 
 
