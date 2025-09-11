@@ -55,9 +55,9 @@ steps:
 
   # Step 7: Deploy to VM
   - id: "Deploy to VM"
-  name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
-  entrypoint: "bash"
-  args:
+    name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    entrypoint: "bash"
+    args:
     - -c
     - |
       gcloud compute instances add-metadata my-docker-vm \
