@@ -53,27 +53,24 @@ steps:
       - push
       - docker.io/anujnamdev/my-java-app:latest
 
-  # Step 7: Deploy to VM
-  - id: "Deploy to VM"
-    name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+ 
+  # Step 7: Deploy to Kubernetes Cluster
+  - id: "Deploy to Kubernetes"
+    name: "gcr.io/cloud-builders/kubectl"
     entrypoint: "bash"
     args:
-    - -c
-    - |
-      gcloud compute instances add-metadata my-docker-vm \
-        --zone=us-central1-a \
-        --metadata startup-script="#!/bin/bash
-          echo '>>> Cleaning old containers...'
-          docker rm -f \$(docker ps -aq) || true
-          docker rmi -f anujnamdev/my-java-app:latest || true
-          echo '>>> Pulling latest image...'
-          docker pull anujnamdev/my-java-app:latest
-          echo '>>> Running container...'
-          docker run -d -p 8080:8080 --name my-java-app anujnamdev/my-java-app:latest
-        "
+      - -c
+      - |
+        echo ">>> Updating Deployment.yaml with latest image"
+        sed -i "s#anujnamdev/my-java-app:.*#anujnamdev/my-java-app:latest#g" k8s/Deployment.yaml
 
+        echo ">>> Applying Kubernetes manifests"
+        kubectl apply -f k8s/Deployment.yaml
+        kubectl apply -f k8s/Service.yaml
 
-
+        echo ">>> Waiting for rollout"
+        kubectl rollout status deployment/my-java-app
+        echo ">>> Listing all resources"
 
 options:
   logging: CLOUD_LOGGING_ONLY
