@@ -70,7 +70,7 @@ steps:
 
         echo ">>> Waiting for rollout"
         kubectl rollout status deployment/my-java-app
-        echo ">>> Listing all resources"
+        
 
 options:
   logging: CLOUD_LOGGING_ONLY
