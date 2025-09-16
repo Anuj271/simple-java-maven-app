@@ -61,6 +61,9 @@ steps:
     args:
       - -c
       - |
+       gcloud compute instances add-metadata masternode-vm \
+        --zone=us-central1-a \
+        --metadata startup-script="#!/bin/bash
         echo ">>> Updating Deployment.yaml with latest image"
         sed -i "s#anujnamdev/my-java-app:.*#anujnamdev/my-java-app:latest#g" k8s/Deployment.yaml
 
