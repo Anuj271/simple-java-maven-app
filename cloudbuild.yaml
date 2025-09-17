@@ -54,14 +54,19 @@ steps:
       - docker.io/anujnamdev/my-java-app:latest
 
  
-  # Step 7: Deploy to Kubernetes Cluster
+  # Step 7: Fetch kubeconfig
+  - id: "Fetch kubeconfig"
+    name: "gcr.io/cloud-builders/gsutil"
+    args: ["cp", "gs://bucket87096/kubeconfig", "/root/.kube/config"]
+
+  # Step 8: Deploy to Kubernetes Cluster
   - id: "Deploy to Kubernetes"
     name: "gcr.io/cloud-builders/kubectl"
     entrypoint: "bash"
     args:
       - -c
       - |
-      
+        
         echo ">>> Updating Deployment.yaml with latest image"
         sed -i "s#anujnamdev/my-java-app:.*#anujnamdev/my-java-app:latest#g" k8s/Deployment.yaml
 
