@@ -97,7 +97,7 @@ options:
 
 steps:
 
-# --- Restore persistent Maven cache from GCS into the shared volume ---
+# --- Restore persistent Maven cache from GCS ---
 - id: "Restore Maven Cache"
   name: "gcr.io/cloud-builders/gsutil"
   args: ["-m", "rsync", "-r", "${_CACHE_BUCKET}/m2", "/root/.m2"]
@@ -105,7 +105,7 @@ steps:
     - name: "maven-cache"
       path: "/root/.m2"
 
-# --- Build with Maven (uses shared /root/.m2 cache) ---
+# --- Build with Maven ---
 - id: "Build with Maven"
   name: "maven:3.9.9-eclipse-temurin-21"
   entrypoint: "mvn"
@@ -125,7 +125,7 @@ steps:
       echo "target/:"
       ls -al target || echo "No target dir"
 
-# --- Run tests (keeps cache mounted) ---
+# --- Run Tests ---
 - id: "Run Tests"
   name: "maven:3.9.9-eclipse-temurin-21"
   entrypoint: "mvn"
@@ -134,12 +134,12 @@ steps:
     - name: "maven-cache"
       path: "/root/.m2"
 
-# --- Build Docker image with immutable tag ---
+# --- Build Docker Image ---
 - id: "Build Docker Image"
   name: "gcr.io/cloud-builders/docker"
   args: ["build", "-t", "${_IMAGE}:$SHORT_SHA", "."]
 
-# --- Docker Hub login using Secret Manager ---
+# --- Docker Hub Login using Secret Manager ---
 - id: "Docker Hub Login"
   name: "gcr.io/cloud-builders/docker"
   entrypoint: "bash"
@@ -152,7 +152,7 @@ steps:
       echo "Logging in to Docker Hub"
       echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
 
-# --- Push Docker image ---
+# --- Push Docker Image ---
 - id: "Push Docker Image"
   name: "gcr.io/cloud-builders/docker"
   args: ["push", "${_IMAGE}:$SHORT_SHA"]
