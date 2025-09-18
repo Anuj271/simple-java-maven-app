@@ -89,8 +89,8 @@ substitutions:
 
 availableSecrets:
   secretManager:
-  - versionName: projects/275216003230/secrets/DOCKER_HUB_PW/versions/latest
-  - versionName: projects/275216003230/secrets/DOCKER_HUB_USER/versions/latest
+   - versionName: projects/275216003230/secrets/DOCKER_HUB_PW/versions/latest
+   - versionName: projects/275216003230/secrets/DOCKER_HUB_USER/versions/latest
 
 options:
   logging: CLOUD_LOGGING_ONLY
