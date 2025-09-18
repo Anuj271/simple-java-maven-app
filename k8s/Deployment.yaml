@@ -1,9 +1,29 @@
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: my-java-app
+#   labels:
+#     app: my-java-app
+# spec:
+#   replicas: 2
+#   selector:
+#     matchLabels:
+#       app: my-java-app
+#   template:
+#     metadata:
+#       labels:
+#         app: my-java-app
+#     spec:
+#       containers:
+#       - name: my-java-app
+#         image: anujnamdev/my-java-app:latest   # <-- will be updated by CI
+#         ports:
+#         - containerPort: 8080
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: my-java-app
-  labels:
-    app: my-java-app
 spec:
   replicas: 2
   selector:
@@ -15,7 +35,20 @@ spec:
         app: my-java-app
     spec:
       containers:
-      - name: my-java-app
-        image: anujnamdev/my-java-app:latest   # <-- will be updated by CI
-        ports:
-        - containerPort: 8080
+        - name: my-java-app          # <-- must match kubectl set image command
+          image: anujnamdev/my-java-app:REPLACE_ME
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 30
