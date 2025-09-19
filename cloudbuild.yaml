@@ -96,10 +96,11 @@ availableSecrets:
 
 options:
   logging: CLOUD_LOGGING_ONLY
+  # timeout: "1200s"   # optional if builds take long
 
 steps:
 
-# --- Restore persistent Maven cache from GCS ---
+# --- Restore Maven cache ---
 - id: "Restore Maven Cache"
   name: "gcr.io/cloud-builders/gsutil"
   args: ["-m", "rsync", "-r", "${_CACHE_BUCKET}/m2", "/root/.m2"]
@@ -116,11 +117,6 @@ steps:
     - name: "maven-cache"
       path: "/root/.m2"
 
-# --- Optional: list files ---
-- id: "List Workspace"
-  name: "gcr.io/cloud-builders/bash"
-  args: ["-c", "ls -al && echo 'target:' && ls -al target || true"]
-
 # --- Run tests ---
 - id: "Run Tests"
   name: "maven:3.9.9-eclipse-temurin-21"
@@ -135,7 +131,7 @@ steps:
   name: "gcr.io/cloud-builders/docker"
   args: ["build", "-t", "${_IMAGE}:$SHORT_SHA", "."]
 
-# --- Docker Hub login using Secret Manager ---
+# --- Docker Hub login (using secrets) ---
 - id: "Docker Hub Login"
   name: "gcr.io/cloud-builders/docker"
   entrypoint: "bash"
@@ -151,7 +147,7 @@ steps:
   name: "gcr.io/cloud-builders/docker"
   args: ["push", "${_IMAGE}:$SHORT_SHA"]
 
-# --- Save updated Maven cache back to GCS ---
+# --- Save Maven cache back to GCS ---
 - id: "Save Maven Cache"
   name: "gcr.io/cloud-builders/gsutil"
   args: ["-m", "rsync", "-r", "/root/.m2", "${_CACHE_BUCKET}/m2"]
@@ -175,14 +171,3 @@ steps:
       echo "Deploying ${_IMAGE}:$SHORT_SHA to cluster"
       kubectl set image deployment/my-java-app my-java-app=${_IMAGE}:$SHORT_SHA --record
       kubectl rollout status deployment/my-java-app --timeout=120s
-
-# --- Verify pushed image ---
-- id: "Verify pushed image"
-  name: "gcr.io/cloud-builders/docker"
-  entrypoint: "bash"
-  args:
-    - "-c"
-    - |
-      echo "Image built and pushed:"
-      docker --version || true
-      docker images | grep $(echo ${_IMAGE} | awk -F/ '{print $2}') || true
