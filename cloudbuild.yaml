@@ -89,9 +89,9 @@ substitutions:
 
 availableSecrets:
   secretManager:
-    - versionName: "projects/275216003230/secrets/DOCKER_HUB_USER/versions/latest"
+    - versionName: projects/275216003230/secrets/DOCKER_HUB_USER/versions/latest
       env: "DOCKER_USERNAME"
-    - versionName: "projects/275216003230/secrets/DOCKER_HUB_PW/versions/latest"
+    - versionName: projects/275216003230/secrets/DOCKER_HUB_PW/versions/latest
       env: "DOCKER_PASSWORD"
 
 options:
@@ -102,7 +102,12 @@ steps:
 # --- Restore persistent Maven cache from GCS into the shared volume ---
 - id: "Restore Maven Cache"
   name: "gcr.io/cloud-builders/gsutil"
-  args: ["-m", "rsync", "-r", "${_CACHE_BUCKET}/m2", "/root/.m2"]
+  entrypoint: "bash"
+  args:
+    - "-c"
+    - |
+      echo "Restoring Maven cache from GCS..."
+      gsutil -m rsync -r "${_CACHE_BUCKET}/m2/" "/root/.m2" || echo "No cache found, continuing..."
   volumes:
     - name: "maven-cache"
       path: "/root/.m2"
@@ -145,14 +150,12 @@ steps:
 - id: "Docker Hub Login"
   name: "gcr.io/cloud-builders/docker"
   entrypoint: "bash"
-  # list the env names that will be injected at runtime
   secretEnv: ["DOCKER_USERNAME", "DOCKER_PASSWORD"]
   args:
     - "-c"
     - |
       echo "Logging in to Docker Hub"
-      # NOTE: use $$ to avoid Cloud Build attempting to treat these as substitutions.
-      echo "$$DOCKER_PASSWORD" | docker login -u "$$DOCKER_USERNAME" --password-stdin
+      echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
 
 # --- Push Docker image ---
 - id: "Push Docker Image"
@@ -162,7 +165,12 @@ steps:
 # --- Save updated Maven cache back to GCS ---
 - id: "Save Maven Cache"
   name: "gcr.io/cloud-builders/gsutil"
-  args: ["-m", "rsync", "-r", "/root/.m2", "${_CACHE_BUCKET}/m2"]
+  entrypoint: "bash"
+  args:
+    - "-c"
+    - |
+      echo "Saving Maven cache to GCS..."
+      gsutil -m rsync -r "/root/.m2" "${_CACHE_BUCKET}/m2/"
   volumes:
     - name: "maven-cache"
       path: "/root/.m2"
