@@ -96,7 +96,6 @@ availableSecrets:
 
 options:
   logging: CLOUD_LOGGING_ONLY
-  # timeout: "1800s"   # optional: uncomment if builds take long
 
 steps:
 
@@ -113,7 +112,7 @@ steps:
     - name: "maven-cache"
       path: "/root/.m2"
 
-# --- Build with Maven (uses shared /root/.m2 cache) ---
+# --- Build with Maven ---
 - id: "Build with Maven"
   name: "maven:3.9.9-eclipse-temurin-21"
   entrypoint: "mvn"
@@ -124,7 +123,7 @@ steps:
 
 # --- Optional: list files ---
 - id: "List Workspace"
-  name: "gcr.io/cloud-builders/bash"
+  name: "bash:5"
   args:
     - "-c"
     - |
@@ -133,7 +132,7 @@ steps:
       echo "target/:"
       ls -al target || echo "No target dir"
 
-# --- Run tests (keeps cache mounted) ---
+# --- Run tests ---
 - id: "Run Tests"
   name: "maven:3.9.9-eclipse-temurin-21"
   entrypoint: "mvn"
@@ -142,21 +141,19 @@ steps:
     - name: "maven-cache"
       path: "/root/.m2"
 
-# --- Build Docker image with immutable tag ---
+# --- Build Docker image ---
 - id: "Build Docker Image"
   name: "gcr.io/cloud-builders/docker"
   args: ["build", "-t", "${_IMAGE}:$SHORT_SHA", "."]
 
-# --- Docker Hub login (SECRETS: $$ escapes to avoid parse-time substitution) ---
+# --- Docker Hub login ---
 - id: "Docker Hub Login"
-  name: "gcr.io/cloud-builders/docker"
-  entrypoint: "bash"
+  name: "bash:5"
   secretEnv: ["DOCKER_USERNAME", "DOCKER_PASSWORD"]
   args:
     - "-c"
     - |
       echo "Logging in to Docker Hub"
-      # use $$ to prevent Cloud Build parsing this as a substitution key
       echo "$$DOCKER_PASSWORD" | docker login -u "$$DOCKER_USERNAME" --password-stdin
 
 # --- Push Docker image ---
@@ -164,7 +161,7 @@ steps:
   name: "gcr.io/cloud-builders/docker"
   args: ["push", "${_IMAGE}:$SHORT_SHA"]
 
-# --- Save updated Maven cache back to GCS ---
+# --- Save Maven cache back to GCS ---
 - id: "Save Maven Cache"
   name: "gcr.io/cloud-builders/gsutil"
   entrypoint: "bash"
@@ -184,8 +181,7 @@ steps:
 
 # --- Deploy to Kubernetes ---
 - id: "Deploy to Kubernetes"
-  name: "gcr.io/cloud-builders/kubectl"
-  entrypoint: "bash"
+  name: "bash:5"
   args:
     - "-c"
     - |
@@ -196,8 +192,7 @@ steps:
 
 # --- Verify pushed image ---
 - id: "Verify pushed image"
-  name: "gcr.io/cloud-builders/docker"
-  entrypoint: "bash"
+  name: "bash:5"
   args:
     - "-c"
     - |
