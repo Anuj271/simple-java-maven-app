@@ -83,31 +83,26 @@
 
 # cloudbuild.yaml -- improved version
 substitutions:
-  _IMAGE: "docker.io/anujnamdev/my-java-app"
-  _CACHE_BUCKET: "gs://my-maven-cache-bucket"
-  _KUBECONFIG_GCS: "gs://bucket87096/kubeconfig"
+  _IMAGE: "docker.io/anujnamdev/my-java-app"     # your Docker Hub repo
+  _CACHE_BUCKET: "gs://my-maven-cache-bucket"    # GCS bucket for Maven cache
+  _KUBECONFIG_GCS: "gs://bucket87096/kubeconfig" # kubeconfig path in GCS
 
 availableSecrets:
   secretManager:
-    - versionName: "projects/275216003230/secrets/DOCKER_HUB_USER/versions/latest"
-      env: "DOCKER_USERNAME"
-    - versionName: "projects/275216003230/secrets/DOCKER_HUB_PW/versions/latest"
-      env: "DOCKER_PASSWORD"
+    - versionName: projects/275216003230/secrets/DOCKER_HUB_USER/versions/latest
+      env: DOCKER_USERNAME
+    - versionName: projects/275216003230/secrets/DOCKER_HUB_PW/versions/latest
+      env: DOCKER_PASSWORD
 
 options:
   logging: CLOUD_LOGGING_ONLY
 
 steps:
 
-# --- Restore persistent Maven cache (graceful if empty) ---
+# --- Restore persistent Maven cache ---
 - id: "Restore Maven Cache"
   name: "gcr.io/cloud-builders/gsutil"
-  entrypoint: "bash"
-  args:
-    - "-c"
-    - |
-      echo "Restoring Maven cache from GCS..."
-      gsutil -m rsync -r "${_CACHE_BUCKET}/m2/" "/root/.m2" || echo "No cache found, continuing..."
+  args: ["-m", "rsync", "-r", "${_CACHE_BUCKET}/m2/", "/root/.m2"]
   volumes:
     - name: "maven-cache"
       path: "/root/.m2"
@@ -121,18 +116,7 @@ steps:
     - name: "maven-cache"
       path: "/root/.m2"
 
-# --- Optional: list files ---
-- id: "List Workspace"
-  name: "bash:5"
-  args:
-    - "-c"
-    - |
-      echo "Workspace listing:"
-      ls -al
-      echo "target/:"
-      ls -al target || echo "No target dir"
-
-# --- Run tests ---
+# --- Run Tests ---
 - id: "Run Tests"
   name: "maven:3.9.9-eclipse-temurin-21"
   entrypoint: "mvn"
@@ -148,7 +132,8 @@ steps:
 
 # --- Docker Hub login ---
 - id: "Docker Hub Login"
-  name: "bash:5"
+  name: "gcr.io/cloud-builders/docker"
+  entrypoint: "bash"
   secretEnv: ["DOCKER_USERNAME", "DOCKER_PASSWORD"]
   args:
     - "-c"
@@ -164,24 +149,20 @@ steps:
 # --- Save Maven cache back to GCS ---
 - id: "Save Maven Cache"
   name: "gcr.io/cloud-builders/gsutil"
-  entrypoint: "bash"
-  args:
-    - "-c"
-    - |
-      echo "Saving Maven cache to GCS..."
-      gsutil -m rsync -r "/root/.m2" "${_CACHE_BUCKET}/m2/"
+  args: ["-m", "rsync", "-r", "/root/.m2/", "${_CACHE_BUCKET}/m2/"]
   volumes:
     - name: "maven-cache"
       path: "/root/.m2"
 
-# --- Fetch kubeconfig from GCS ---
+# --- Fetch kubeconfig ---
 - id: "Fetch kubeconfig"
   name: "gcr.io/cloud-builders/gsutil"
   args: ["cp", "${_KUBECONFIG_GCS}", "kubeconfig"]
 
 # --- Deploy to Kubernetes ---
 - id: "Deploy to Kubernetes"
-  name: "bash:5"
+  name: "gcr.io/cloud-builders/kubectl"
+  entrypoint: "bash"
   args:
     - "-c"
     - |
@@ -192,7 +173,8 @@ steps:
 
 # --- Verify pushed image ---
 - id: "Verify pushed image"
-  name: "bash:5"
+  name: "gcr.io/cloud-builders/docker"
+  entrypoint: "bash"
   args:
     - "-c"
     - |
