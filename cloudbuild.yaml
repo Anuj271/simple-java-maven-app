@@ -93,8 +93,6 @@ availableSecrets:
       env: "DOCKER_USERNAME"
     - versionName: "projects/275216003230/secrets/DOCKER_HUB_PW/versions/latest"
       env: "DOCKER_PASSWORD"
-    - versionName: "projects/275216003230/secrets/K8S_CLUSTER_CA/versions/latest"
-      env: "CLUSTER_CA_CERT"
 
 options:
   logging: CLOUD_LOGGING_ONLY
@@ -197,22 +195,17 @@ steps:
 - id: "Deploy to Kubernetes"
   name: "gcr.io/cloud-builders/kubectl"
   entrypoint: "bash"
-  secretEnv: ["CLUSTER_CA_CERT"]
   args:
     - -c
     - |
       export KUBECONFIG=$(pwd)/kubeconfig
 
-      # Create CA cert file
-      echo ">>> Setting up cluster CA certificate"
-      echo "$$CLUSTER_CA_CERT" | base64 -d > /workspace/ca.crt
-
       echo ">>> Updating Deployment.yaml with image ${_IMAGE}:$SHORT_SHA"
       sed -i "s#anujnamdev/my-java-app:.*#${_IMAGE}:$SHORT_SHA#g" k8s/Deployment.yaml
 
       echo ">>> Applying Kubernetes manifests"
-      kubectl --certificate-authority=/workspace/ca.crt apply -f k8s/Deployment.yaml --validate=false
-      kubectl --certificate-authority=/workspace/ca.crt apply -f k8s/Service.yaml --validate=false
+      kubectl apply -f k8s/Deployment.yaml --validate=false --insecure-skip-tls-verify=true
+      kubectl apply -f k8s/Service.yaml --validate=false --insecure-skip-tls-verify=true
 
       echo ">>> Waiting for rollout"
-      kubectl --certificate-authority=/workspace/ca.crt rollout status deployment/my-java-app
+      kubectl rollout status deployment/my-java-app --insecure-skip-tls-verify=true
