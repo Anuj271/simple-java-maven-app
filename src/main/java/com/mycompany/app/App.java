@@ -9,7 +9,7 @@ import java.net.InetSocketAddress;
 
 public class App {
 
-    private static final String MESSAGE = "Hello rahul!";
+    private static final String MESSAGE = "Hello Rahul!";
 
     public App() {}
 
