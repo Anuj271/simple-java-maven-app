@@ -89,17 +89,18 @@ substitutions:
 
 availableSecrets:
   secretManager:
-    - versionName: projects/275216003230/secrets/DOCKER_HUB_USER/versions/latest
+    - versionName: "projects/275216003230/secrets/DOCKER_HUB_USER/versions/latest"
       env: "DOCKER_USERNAME"
-    - versionName: projects/275216003230/secrets/DOCKER_HUB_PW/versions/latest
+    - versionName: "projects/275216003230/secrets/DOCKER_HUB_PW/versions/latest"
       env: "DOCKER_PASSWORD"
 
 options:
   logging: CLOUD_LOGGING_ONLY
+  # timeout: "1800s"   # optional: uncomment if builds take long
 
 steps:
 
-# --- Restore persistent Maven cache from GCS into the shared volume ---
+# --- Restore persistent Maven cache (graceful if empty) ---
 - id: "Restore Maven Cache"
   name: "gcr.io/cloud-builders/gsutil"
   entrypoint: "bash"
@@ -146,7 +147,7 @@ steps:
   name: "gcr.io/cloud-builders/docker"
   args: ["build", "-t", "${_IMAGE}:$SHORT_SHA", "."]
 
-# --- Docker Hub login using Secret Manager ---
+# --- Docker Hub login (SECRETS: $$ escapes to avoid parse-time substitution) ---
 - id: "Docker Hub Login"
   name: "gcr.io/cloud-builders/docker"
   entrypoint: "bash"
@@ -155,7 +156,8 @@ steps:
     - "-c"
     - |
       echo "Logging in to Docker Hub"
-      echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+      # use $$ to prevent Cloud Build parsing this as a substitution key
+      echo "$$DOCKER_PASSWORD" | docker login -u "$$DOCKER_USERNAME" --password-stdin
 
 # --- Push Docker image ---
 - id: "Push Docker Image"
