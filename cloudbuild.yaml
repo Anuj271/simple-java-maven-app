@@ -89,15 +89,17 @@ substitutions:
 
 availableSecrets:
   secretManager:
-    - versionName: "projects/275216003230/secrets/DOCKER_HUB_PW/versions/latest"
     - versionName: "projects/275216003230/secrets/DOCKER_HUB_USER/versions/latest"
+      env: "DOCKER_USERNAME"
+    - versionName: "projects/275216003230/secrets/DOCKER_HUB_PW/versions/latest"
+      env: "DOCKER_PASSWORD"
 
 options:
   logging: CLOUD_LOGGING_ONLY
 
 steps:
 
-# --- Restore persistent Maven cache from GCS ---
+# --- Restore persistent Maven cache from GCS into the shared volume ---
 - id: "Restore Maven Cache"
   name: "gcr.io/cloud-builders/gsutil"
   args: ["-m", "rsync", "-r", "${_CACHE_BUCKET}/m2", "/root/.m2"]
@@ -105,7 +107,7 @@ steps:
     - name: "maven-cache"
       path: "/root/.m2"
 
-# --- Build with Maven ---
+# --- Build with Maven (uses shared /root/.m2 cache) ---
 - id: "Build with Maven"
   name: "maven:3.9.9-eclipse-temurin-21"
   entrypoint: "mvn"
@@ -125,7 +127,7 @@ steps:
       echo "target/:"
       ls -al target || echo "No target dir"
 
-# --- Run Tests ---
+# --- Run tests (keeps cache mounted) ---
 - id: "Run Tests"
   name: "maven:3.9.9-eclipse-temurin-21"
   entrypoint: "mvn"
@@ -134,25 +136,23 @@ steps:
     - name: "maven-cache"
       path: "/root/.m2"
 
-# --- Build Docker Image ---
+# --- Build Docker image with immutable tag ---
 - id: "Build Docker Image"
   name: "gcr.io/cloud-builders/docker"
   args: ["build", "-t", "${_IMAGE}:$SHORT_SHA", "."]
 
-# --- Docker Hub Login using Secret Manager ---
+# --- Docker Hub login using Secret Manager ---
 - id: "Docker Hub Login"
   name: "gcr.io/cloud-builders/docker"
   entrypoint: "bash"
-  secretEnv:
-    DOCKER_USERNAME: DOCKER_HUB_USER
-    DOCKER_PASSWORD: DOCKER_HUB_PW
+  secretEnv: ["DOCKER_USERNAME", "DOCKER_PASSWORD"]
   args:
     - "-c"
     - |
       echo "Logging in to Docker Hub"
       echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
 
-# --- Push Docker Image ---
+# --- Push Docker image ---
 - id: "Push Docker Image"
   name: "gcr.io/cloud-builders/docker"
   args: ["push", "${_IMAGE}:$SHORT_SHA"]
