@@ -204,8 +204,8 @@ steps:
       sed -i "s#anujnamdev/my-java-app:.*#${_IMAGE}:$SHORT_SHA#g" k8s/Deployment.yaml
 
       echo ">>> Applying Kubernetes manifests"
-      kubectl apply -f k8s/Deployment.yaml --validate=false
-      kubectl apply -f k8s/Service.yaml --validate=false
+      kubectl apply -f k8s/Deployment.yaml --validate=false --insecure-skip-tls-verify=true
+      kubectl apply -f k8s/Service.yaml --validate=false --insecure-skip-tls-verify=true
 
       echo ">>> Waiting for rollout"
-      kubectl rollout status deployment/my-java-app
+      kubectl rollout status deployment/my-java-app --insecure-skip-tls-verify=true
