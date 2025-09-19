@@ -59,23 +59,23 @@
 #   #   args: ["cp", "gs://bucket87096/kubeconfig", "kubeconfig"]
 #
 #   # Step 8: Deploy to Kubernetes Cluster
-#   # - id: "Deploy to Kubernetes"
-#   #   name: "gcr.io/cloud-builders/kubectl"
-#   #   entrypoint: "bash"
-#   #   args:
-#   #     - -c
-#   #     - |
-#   #       export KUBECONFIG=$(pwd)/kubeconfig
-#   #
-#   #       echo ">>> Updating Deployment.yaml with latest image"
-#   #       sed -i "s#anujnamdev/my-java-app:.*#anujnamdev/my-java-app:latest#g" k8s/Deployment.yaml
-#   #
-#   #       echo ">>> Applying Kubernetes manifests"
-#   #       kubectl apply -f k8s/Deployment.yaml --validate=false
-#   #       kubectl apply -f k8s/Service.yaml --validate=false
-#   #
-#   #       echo ">>> Waiting for rollout"
-#   #       kubectl rollout status deployment/my-java-app
+  # - id: "Deploy to Kubernetes"
+  #   name: "gcr.io/cloud-builders/kubectl"
+  #   entrypoint: "bash"
+  #   args:
+  #     - -c
+  #     - |
+  #       export KUBECONFIG=$(pwd)/kubeconfig
+  
+  #       echo ">>> Updating Deployment.yaml with latest image"
+  #       sed -i "s#anujnamdev/my-java-app:.*#anujnamdev/my-java-app:latest#g" k8s/Deployment.yaml
+  
+  #       echo ">>> Applying Kubernetes manifests"
+  #       kubectl apply -f k8s/Deployment.yaml --validate=false
+  #       kubectl apply -f k8s/Service.yaml --validate=false
+  
+  #       echo ">>> Waiting for rollout"
+  #       kubectl rollout status deployment/my-java-app
 #
 # options:
 #   logging: CLOUD_LOGGING_ONLY
@@ -191,13 +191,21 @@ steps:
   name: "gcr.io/cloud-builders/gsutil"
   args: ["cp", "${_KUBECONFIG_GCS}", "kubeconfig"]
 
+# Deploy to Kubernetes (best step for both initial and future deployments)
 - id: "Deploy to Kubernetes"
   name: "gcr.io/cloud-builders/kubectl"
   entrypoint: "bash"
   args:
-    - "-c"
+    - -c
     - |
       export KUBECONFIG=$(pwd)/kubeconfig
-      echo "Deploying ${_IMAGE}:$SHORT_SHA to cluster"
-      kubectl set image deployment/my-java-app my-java-app=${_IMAGE}:$SHORT_SHA --record
-      kubectl rollout status deployment/my-java-app --timeout=120s
+
+      echo ">>> Updating Deployment.yaml with image ${_IMAGE}:$SHORT_SHA"
+      sed -i "s#anujnamdev/my-java-app:.*#${_IMAGE}:$SHORT_SHA#g" k8s/Deployment.yaml
+
+      echo ">>> Applying Kubernetes manifests"
+      kubectl apply -f k8s/Deployment.yaml --validate=false
+      kubectl apply -f k8s/Service.yaml --validate=false
+
+      echo ">>> Waiting for rollout"
+      kubectl rollout status deployment/my-java-app
