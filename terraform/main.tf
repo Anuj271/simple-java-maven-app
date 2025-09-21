@@ -10,7 +10,7 @@ data "google_client_config" "default" {}
 # --------------------------
 resource "google_container_cluster" "primary" {
   name     = var.cluster_name
-  location = var.zone
+  location = var.region   # instead of var.zone
   initial_node_count = var.node_count
 
   node_config {
