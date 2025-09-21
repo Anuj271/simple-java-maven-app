@@ -214,16 +214,15 @@
 #       kubectl rollout status deployment/my-java-app --insecure-skip-tls-verify=true
 
 # cloudbuild.yaml
-timeout: "3600s"  # 60 minutes - GKE creation can take time
+# cloudbuild.yaml -- with Terraform & GKE deployment
+
+# cloudbuild.yaml -- Terraform + GKE deployment
+
+timeout: "1200s"   # Build timeout = 20 minutes (you can increase if needed)
 
 substitutions:
   _IMAGE: "docker.io/anujnamdev/my-java-app"
   _CACHE_BUCKET: "gs://my-maven-cache-bucket"
-  _TF_DIR: "terraform"                     # where tf files live
-  _TF_VAR_project: "my-hello-cb"
-  _TF_VAR_region: "us-central1"
-  _TF_VAR_zone: "us-central1-a"
-  _TF_VAR_cluster_name: "cb-gke-cluster"
 
 availableSecrets:
   secretManager:
@@ -233,23 +232,28 @@ availableSecrets:
       env: "DOCKER_PASSWORD"
 
 options:
-  logging: CLOUD_LOGGING_ONLY
+  logging: CLOUD_LOGGING_ONLY   # send logs only to Cloud Logging (cleaner builds)
 
 steps:
-# === Restore Maven cache (optional, speeds builds) ===
+
+# --------------------------------------------------------
+# 1. Restore Maven cache
+# --------------------------------------------------------
 - id: "Restore Maven Cache"
   name: "gcr.io/cloud-builders/gsutil"
   entrypoint: "bash"
   args:
     - "-c"
     - |
-      echo "Restoring Maven cache..."
-      gsutil -m rsync -r "${_CACHE_BUCKET}/m2/" "/root/.m2" || echo "No cache found"
+      echo "Restoring Maven cache from GCS..."
+      gsutil -m rsync -r "${_CACHE_BUCKET}/m2/" "/root/.m2" || echo "No cache found, continuing..."
   volumes:
     - name: "maven-cache"
       path: "/root/.m2"
 
-# === Build & package with Maven ===
+# --------------------------------------------------------
+# 2. Build with Maven
+# --------------------------------------------------------
 - id: "Build with Maven"
   name: "maven:3.9.9-eclipse-temurin-21"
   entrypoint: "mvn"
@@ -258,7 +262,9 @@ steps:
     - name: "maven-cache"
       path: "/root/.m2"
 
-# === Run tests (separate step) ===
+# --------------------------------------------------------
+# 3. Run tests
+# --------------------------------------------------------
 - id: "Run Tests"
   name: "maven:3.9.9-eclipse-temurin-21"
   entrypoint: "mvn"
@@ -267,12 +273,16 @@ steps:
     - name: "maven-cache"
       path: "/root/.m2"
 
-# === Build Docker image using immutable tag ($SHORT_SHA) ===
+# --------------------------------------------------------
+# 4. Build Docker image
+# --------------------------------------------------------
 - id: "Build Docker Image"
   name: "gcr.io/cloud-builders/docker"
   args: ["build", "-t", "${_IMAGE}:$SHORT_SHA", "."]
 
-# === Docker Hub login (secrets injected) ===
+# --------------------------------------------------------
+# 5. Docker Hub login
+# --------------------------------------------------------
 - id: "Docker Hub Login"
   name: "gcr.io/cloud-builders/docker"
   entrypoint: "bash"
@@ -280,50 +290,42 @@ steps:
   args:
     - "-c"
     - |
-      echo "Logging into Docker Hub..."
+      echo "Attempting docker login..."
       echo "$$DOCKER_PASSWORD" | docker login --username "$$DOCKER_USERNAME" --password-stdin
 
-# === Push Docker image (tagged with commit SHA) ===
+# --------------------------------------------------------
+# 6. Push Docker image
+# --------------------------------------------------------
 - id: "Push Docker Image"
   name: "gcr.io/cloud-builders/docker"
   args: ["push", "${_IMAGE}:$SHORT_SHA"]
 
-# === Terraform: create GKE cluster, reserve external IP, and deploy app ===
-- id: "Terraform Apply (GKE + Deploy)"
-  name: "hashicorp/terraform:1.6.7"
-  entrypoint: "bash"
+# --------------------------------------------------------
+# 7. Run Terraform (create GKE + deploy app)
+# --------------------------------------------------------
+- id: "Terraform Apply"
+  name: "hashicorp/terraform:1.6.6"
+  entrypoint: "sh"
   args:
     - "-c"
     - |
-      set -euo pipefail
-      echo "Working dir: ${_TF_DIR}"
-      cd ${_TF_DIR}
-
-      echo "Terraform init..."
-      terraform init -input=false
-
-      echo "Terraform apply (creating GKE, reserving IP, deploying k8s resources)..."
+      cd terraform
+      terraform init
       terraform apply -auto-approve \
-        -var "project=${_TF_VAR_project}" \
-        -var "region=${_TF_VAR_region}" \
-        -var "zone=${_TF_VAR_zone}" \
-        -var "cluster_name=${_TF_VAR_cluster_name}" \
         -var "image=${_IMAGE}" \
         -var "image_tag=$SHORT_SHA"
 
-      echo "Terraform apply completed. Showing outputs:"
-      terraform output
-
-# === Save Maven cache back to GCS ===
+# --------------------------------------------------------
+# 8. Save Maven cache
+# --------------------------------------------------------
 - id: "Save Maven Cache"
   name: "gcr.io/cloud-builders/gsutil"
   entrypoint: "bash"
   args:
     - "-c"
     - |
-      echo "Saving Maven cache..."
+      echo "Saving Maven cache to GCS..."
       gsutil -m rsync -r "/root/.m2/" "${_CACHE_BUCKET}/m2/"
   volumes:
     - name: "maven-cache"
       path: "/root/.m2"
-
