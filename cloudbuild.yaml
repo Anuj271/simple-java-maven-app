@@ -82,10 +82,148 @@
 #   # defaultLogsBucketBehavior: REGIONAL_USER_OWNED_BUCKET
 
 # cloudbuild.yaml -- improved version
+# substitutions:
+#   _IMAGE: "docker.io/anujnamdev/my-java-app"
+#   _CACHE_BUCKET: "gs://my-maven-cache-bucket"
+#   _KUBECONFIG_GCS: "gs://bucket87096/kubeconfig"
+
+# availableSecrets:
+#   secretManager:
+#     - versionName: "projects/275216003230/secrets/DOCKER_HUB_USER/versions/latest"
+#       env: "DOCKER_USERNAME"
+#     - versionName: "projects/275216003230/secrets/DOCKER_HUB_PW/versions/latest"
+#       env: "DOCKER_PASSWORD"
+
+# options:
+#   logging: CLOUD_LOGGING_ONLY
+
+# steps:
+
+# # Restore persistent Maven cache (graceful if empty)
+# - id: "Restore Maven Cache"
+#   name: "gcr.io/cloud-builders/gsutil"
+#   entrypoint: "bash"
+#   args:
+#     - "-c"
+#     - |
+#       echo "Restoring Maven cache from GCS..."
+#       gsutil -m rsync -r "${_CACHE_BUCKET}/m2/" "/root/.m2" || echo "No cache found, continuing..."
+#   volumes:
+#     - name: "maven-cache"
+#       path: "/root/.m2"
+
+# # Build with Maven
+# - id: "Build with Maven"
+#   name: "maven:3.9.9-eclipse-temurin-21"
+#   entrypoint: "mvn"
+#   args: ["-B", "clean", "package", "-DskipTests=false"]
+#   volumes:
+#     - name: "maven-cache"
+#       path: "/root/.m2"
+
+# # Run tests
+# - id: "Run Tests"
+#   name: "maven:3.9.9-eclipse-temurin-21"
+#   entrypoint: "mvn"
+#   args: ["test"]
+#   volumes:
+#     - name: "maven-cache"
+#       path: "/root/.m2"
+
+# # Build Docker image (immutable tag)
+# - id: "Build Docker Image"
+#   name: "gcr.io/cloud-builders/docker"
+#   args: ["build", "-t", "${_IMAGE}:$SHORT_SHA", "."]
+
+# # Debug: check that secrets are injected (safe — does NOT print secret values)
+# - id: "Debug Secret Presence"
+#   name: "gcr.io/cloud-builders/docker"
+#   entrypoint: "bash"
+#   secretEnv: ["DOCKER_USERNAME", "DOCKER_PASSWORD"]
+#   args:
+#     - "-c"
+#     - |
+#       echo "== Secret debug start =="
+#       if [ -z "$$DOCKER_USERNAME" ]; then
+#         echo "DOCKER_USERNAME: MISSING"
+#       else
+#         echo "DOCKER_USERNAME: PRESENT (len=$(echo -n $$DOCKER_USERNAME | wc -c)) sample=$${DOCKER_USERNAME:0:3}***"
+#       fi
+#       if [ -z "$$DOCKER_PASSWORD" ]; then
+#         echo "DOCKER_PASSWORD: MISSING"
+#       else
+#         echo "DOCKER_PASSWORD: PRESENT (len=$(echo -n $$DOCKER_PASSWORD | wc -c))"
+#       fi
+#       echo "== Secret debug end =="
+
+# # Docker Hub login (use secrets; note $$ escapes)
+# - id: "Docker Hub Login"
+#   name: "gcr.io/cloud-builders/docker"
+#   entrypoint: "bash"
+#   secretEnv: ["DOCKER_USERNAME", "DOCKER_PASSWORD"]
+#   args:
+#     - "-c"
+#     - |
+#       echo "Attempting docker login..."
+#       # Use --username and --password-stdin, passing password via stdin for safety
+#       echo "$$DOCKER_PASSWORD" | docker login --username "$$DOCKER_USERNAME" --password-stdin
+
+# # Push Docker image
+# - id: "Push Docker Image"
+#   name: "gcr.io/cloud-builders/docker"
+#   args: ["push", "${_IMAGE}:$SHORT_SHA"]
+
+  #create a terraform scrtip to create the virtual machine
+  #write a step to connect to the vm and deploy the docker image as a container on the virtual machine
+
+# # Save Maven cache back to GCS
+# - id: "Save Maven Cache"
+#   name: "gcr.io/cloud-builders/gsutil"
+#   entrypoint: "bash"
+#   args:
+#     - "-c"
+#     - |
+#       echo "Saving Maven cache to GCS..."
+#       gsutil -m rsync -r "/root/.m2/" "${_CACHE_BUCKET}/m2/"
+#   volumes:
+#     - name: "maven-cache"
+#       path: "/root/.m2"
+
+# # Fetch kubeconfig and deploy
+# - id: "Fetch kubeconfig"
+#   name: "gcr.io/cloud-builders/gsutil"
+#   args: ["cp", "${_KUBECONFIG_GCS}", "kubeconfig"]
+
+# # Deploy to Kubernetes (best step for both initial and future deployments)
+# - id: "Deploy to Kubernetes"
+#   name: "gcr.io/cloud-builders/kubectl"
+#   entrypoint: "bash"
+#   args:
+#     - -c
+#     - |
+#       export KUBECONFIG=$(pwd)/kubeconfig
+
+#       echo ">>> Updating Deployment.yaml with image ${_IMAGE}:$SHORT_SHA"
+#       sed -i "s#anujnamdev/my-java-app:.*#${_IMAGE}:$SHORT_SHA#g" k8s/Deployment.yaml
+
+#       echo ">>> Applying Kubernetes manifests"
+#       kubectl apply -f k8s/Deployment.yaml --validate=false --insecure-skip-tls-verify=true
+#       kubectl apply -f k8s/Service.yaml --validate=false --insecure-skip-tls-verify=true
+
+#       echo ">>> Waiting for rollout"
+#       kubectl rollout status deployment/my-java-app --insecure-skip-tls-verify=true
+
+# cloudbuild.yaml
+timeout: "3600s"  # 60 minutes - GKE creation can take time
+
 substitutions:
   _IMAGE: "docker.io/anujnamdev/my-java-app"
   _CACHE_BUCKET: "gs://my-maven-cache-bucket"
-  _KUBECONFIG_GCS: "gs://bucket87096/kubeconfig"
+  _TF_DIR: "terraform"                     # where tf files live
+  _TF_VAR_project: "my-hello-cb"
+  _TF_VAR_region: "us-central1"
+  _TF_VAR_zone: "us-central1-a"
+  _TF_VAR_cluster_name: "cb-gke-cluster"
 
 availableSecrets:
   secretManager:
@@ -98,21 +236,20 @@ options:
   logging: CLOUD_LOGGING_ONLY
 
 steps:
-
-# Restore persistent Maven cache (graceful if empty)
+# === Restore Maven cache (optional, speeds builds) ===
 - id: "Restore Maven Cache"
   name: "gcr.io/cloud-builders/gsutil"
   entrypoint: "bash"
   args:
     - "-c"
     - |
-      echo "Restoring Maven cache from GCS..."
-      gsutil -m rsync -r "${_CACHE_BUCKET}/m2/" "/root/.m2" || echo "No cache found, continuing..."
+      echo "Restoring Maven cache..."
+      gsutil -m rsync -r "${_CACHE_BUCKET}/m2/" "/root/.m2" || echo "No cache found"
   volumes:
     - name: "maven-cache"
       path: "/root/.m2"
 
-# Build with Maven
+# === Build & package with Maven ===
 - id: "Build with Maven"
   name: "maven:3.9.9-eclipse-temurin-21"
   entrypoint: "mvn"
@@ -121,7 +258,7 @@ steps:
     - name: "maven-cache"
       path: "/root/.m2"
 
-# Run tests
+# === Run tests (separate step) ===
 - id: "Run Tests"
   name: "maven:3.9.9-eclipse-temurin-21"
   entrypoint: "mvn"
@@ -130,33 +267,12 @@ steps:
     - name: "maven-cache"
       path: "/root/.m2"
 
-# Build Docker image (immutable tag)
+# === Build Docker image using immutable tag ($SHORT_SHA) ===
 - id: "Build Docker Image"
   name: "gcr.io/cloud-builders/docker"
   args: ["build", "-t", "${_IMAGE}:$SHORT_SHA", "."]
 
-# Debug: check that secrets are injected (safe — does NOT print secret values)
-- id: "Debug Secret Presence"
-  name: "gcr.io/cloud-builders/docker"
-  entrypoint: "bash"
-  secretEnv: ["DOCKER_USERNAME", "DOCKER_PASSWORD"]
-  args:
-    - "-c"
-    - |
-      echo "== Secret debug start =="
-      if [ -z "$$DOCKER_USERNAME" ]; then
-        echo "DOCKER_USERNAME: MISSING"
-      else
-        echo "DOCKER_USERNAME: PRESENT (len=$(echo -n $$DOCKER_USERNAME | wc -c)) sample=$${DOCKER_USERNAME:0:3}***"
-      fi
-      if [ -z "$$DOCKER_PASSWORD" ]; then
-        echo "DOCKER_PASSWORD: MISSING"
-      else
-        echo "DOCKER_PASSWORD: PRESENT (len=$(echo -n $$DOCKER_PASSWORD | wc -c))"
-      fi
-      echo "== Secret debug end =="
-
-# Docker Hub login (use secrets; note $$ escapes)
+# === Docker Hub login (secrets injected) ===
 - id: "Docker Hub Login"
   name: "gcr.io/cloud-builders/docker"
   entrypoint: "bash"
@@ -164,48 +280,50 @@ steps:
   args:
     - "-c"
     - |
-      echo "Attempting docker login..."
-      # Use --username and --password-stdin, passing password via stdin for safety
+      echo "Logging into Docker Hub..."
       echo "$$DOCKER_PASSWORD" | docker login --username "$$DOCKER_USERNAME" --password-stdin
 
-# Push Docker image
+# === Push Docker image (tagged with commit SHA) ===
 - id: "Push Docker Image"
   name: "gcr.io/cloud-builders/docker"
   args: ["push", "${_IMAGE}:$SHORT_SHA"]
 
-# Save Maven cache back to GCS
+# === Terraform: create GKE cluster, reserve external IP, and deploy app ===
+- id: "Terraform Apply (GKE + Deploy)"
+  name: "hashicorp/terraform:1.6.7"
+  entrypoint: "bash"
+  args:
+    - "-c"
+    - |
+      set -euo pipefail
+      echo "Working dir: ${_TF_DIR}"
+      cd ${_TF_DIR}
+
+      echo "Terraform init..."
+      terraform init -input=false
+
+      echo "Terraform apply (creating GKE, reserving IP, deploying k8s resources)..."
+      terraform apply -auto-approve \
+        -var "project=${_TF_VAR_project}" \
+        -var "region=${_TF_VAR_region}" \
+        -var "zone=${_TF_VAR_zone}" \
+        -var "cluster_name=${_TF_VAR_cluster_name}" \
+        -var "image=${_IMAGE}" \
+        -var "image_tag=$SHORT_SHA"
+
+      echo "Terraform apply completed. Showing outputs:"
+      terraform output
+
+# === Save Maven cache back to GCS ===
 - id: "Save Maven Cache"
   name: "gcr.io/cloud-builders/gsutil"
   entrypoint: "bash"
   args:
     - "-c"
     - |
-      echo "Saving Maven cache to GCS..."
+      echo "Saving Maven cache..."
       gsutil -m rsync -r "/root/.m2/" "${_CACHE_BUCKET}/m2/"
   volumes:
     - name: "maven-cache"
       path: "/root/.m2"
 
-# Fetch kubeconfig and deploy
-- id: "Fetch kubeconfig"
-  name: "gcr.io/cloud-builders/gsutil"
-  args: ["cp", "${_KUBECONFIG_GCS}", "kubeconfig"]
-
-# Deploy to Kubernetes (best step for both initial and future deployments)
-- id: "Deploy to Kubernetes"
-  name: "gcr.io/cloud-builders/kubectl"
-  entrypoint: "bash"
-  args:
-    - -c
-    - |
-      export KUBECONFIG=$(pwd)/kubeconfig
-
-      echo ">>> Updating Deployment.yaml with image ${_IMAGE}:$SHORT_SHA"
-      sed -i "s#anujnamdev/my-java-app:.*#${_IMAGE}:$SHORT_SHA#g" k8s/Deployment.yaml
-
-      echo ">>> Applying Kubernetes manifests"
-      kubectl apply -f k8s/Deployment.yaml --validate=false --insecure-skip-tls-verify=true
-      kubectl apply -f k8s/Service.yaml --validate=false --insecure-skip-tls-verify=true
-
-      echo ">>> Waiting for rollout"
-      kubectl rollout status deployment/my-java-app --insecure-skip-tls-verify=true
