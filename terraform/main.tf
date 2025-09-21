@@ -1,12 +1,6 @@
 provider "google" {
-  project = "your-project-id"
-  region  = "us-central1"
-}
-
-provider "kubernetes" {
-  host                   = google_container_cluster.primary.endpoint
-  token                  = data.google_client_config.default.access_token
-  cluster_ca_certificate = base64decode(google_container_cluster.primary.master_auth.0.cluster_ca_certificate)
+  project = var.project
+  region  = var.region
 }
 
 data "google_client_config" "default" {}
@@ -15,17 +9,30 @@ data "google_client_config" "default" {}
 # Create GKE Cluster
 # --------------------------
 resource "google_container_cluster" "primary" {
-  name     = "my-gke-cluster"
-  location = "us-central1-a"
-
-  initial_node_count = 1
+  name     = var.cluster_name
+  location = var.zone
+  initial_node_count = var.node_count
 
   node_config {
-    machine_type = "e2-medium"
+    machine_type = var.machine_type
     oauth_scopes = [
       "https://www.googleapis.com/auth/cloud-platform",
     ]
   }
+}
+
+provider "kubernetes" {
+  host                   = google_container_cluster.primary.endpoint
+  token                  = data.google_client_config.default.access_token
+  cluster_ca_certificate = base64decode(google_container_cluster.primary.master_auth.0.cluster_ca_certificate)
+}
+
+# --------------------------
+# Reserve a static external IP for LoadBalancer
+# --------------------------
+resource "google_compute_address" "lb_ip" {
+  name   = "my-lb-ip"
+  region = var.region
 }
 
 # --------------------------
@@ -83,6 +90,8 @@ resource "kubernetes_service" "app_svc" {
     }
 
     type = "LoadBalancer"
+
+    load_balancer_ip = google_compute_address.lb_ip.address
 
     port {
       port        = 80
