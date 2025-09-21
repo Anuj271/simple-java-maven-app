@@ -30,15 +30,6 @@ variable "machine_type" {
 }
 
 variable "image" {
-  type    = string
-  default = "docker.io/anujnamdev/my-java-app"
-}
-
-variable "image_tag" {
-  type    = string
-  default = "latest"
-}
-variable "image" {
   description = "The Docker image to deploy"
   type        = string
 }
