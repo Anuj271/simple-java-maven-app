@@ -311,9 +311,7 @@ steps:
     - |
       cd terraform
       terraform init
-      terraform apply -auto-approve \
-        -var "image=${_IMAGE}" \
-        -var "image_tag=$SHORT_SHA"
+      terraform apply -auto-approve
 
 # --------------------------------------------------------
 # 8. Save Maven cache
