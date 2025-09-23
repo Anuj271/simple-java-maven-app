@@ -28,13 +28,3 @@ variable "machine_type" {
   type    = string
   default = "e2-medium"
 }
-
-variable "image" {
-  description = "The Docker image to deploy"
-  type        = string
-}
-
-variable "image_tag" {
-  description = "The tag of the Docker image"
-  type        = string
-}
