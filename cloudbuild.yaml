@@ -218,7 +218,7 @@
 
 # cloudbuild.yaml -- Terraform + GKE deployment
 
-timeout: "1200s"   # Build timeout = 20 minutes
+timeout: "1200s"   # 20 minutes
 
 substitutions:
   _IMAGE: "docker.io/anujnamdev/my-java-app"
@@ -301,7 +301,7 @@ steps:
   args: ["push", "${_IMAGE}:$SHORT_SHA"]
 
 # --------------------------------------------------------
-# 7. Terraform apply (only for non-cluster resources)
+# 7. Run Terraform (apply any updates)
 # --------------------------------------------------------
 - id: "Terraform Apply"
   name: "hashicorp/terraform:1.6.6"
@@ -323,7 +323,7 @@ steps:
   args:
     - "-c"
     - |
-      echo "Fetching cluster credentials..."
+      echo "Fetching GKE cluster credentials..."
       gcloud container clusters get-credentials cb-gke-cluster \
         --zone us-central1-a \
         --project $PROJECT_ID
