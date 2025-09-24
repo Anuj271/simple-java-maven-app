@@ -310,10 +310,17 @@ steps:
     - "-c"
     - |
       cd terraform
-      terraform init -backend-config="bucket=my-terraform-state-bucket-anujnamdev271" \
-                     -backend-config="prefix=gke-cluster"
-      terraform plan
-      terraform apply -auto-approve
+      echo "Initializing Terraform with remote state..."
+      terraform init \
+        -backend-config="bucket=my-terraform-state-bucket-anujnamdev271" \
+        -backend-config="prefix=gke-cluster"
+
+      echo "Planning changes..."
+      terraform plan -out=tfplan
+
+      echo "Applying changes..."
+      terraform apply -auto-approve tfplan
+      # Note: No -var flags needed, values will be read from terraform.tfvars automatically.
 
 # --------------------------------------------------------
 # 8. Deploy app manifests (Deployment + Service)

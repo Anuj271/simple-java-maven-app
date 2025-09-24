@@ -1,0 +1,6 @@
+project          = "my-hello-cb"
+region           = "us-central1"
+zone             = "us-central1-a"
+cluster_name     = "cb-gke-cluster"
+lb_ip_name       = "my-lb-ip-2"
+terraform_bucket = "my-terraform-state-bucket-anujnamdev271"

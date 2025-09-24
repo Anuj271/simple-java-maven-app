@@ -1,48 +1,29 @@
 variable "project" {
-  description = "GCP project ID"
+  description = "GCP Project ID"
   type        = string
-  default     = "my-hello-cb"   # <--- Add your GCP project ID here
 }
 
-
 variable "region" {
-  description = "GCP region"
+  description = "GCP Region (e.g. us-central1)"
   type        = string
-  default     = "us-central1"
 }
 
 variable "zone" {
-  description = "GCP zone for GKE cluster"
+  description = "GCP Zone (e.g. us-central1-a)"
   type        = string
-  default     = "us-central1-a"
 }
 
 variable "cluster_name" {
-  description = "Name of the GKE cluster"
+  description = "Existing GKE Cluster name"
   type        = string
-  default     = "cb-gke-cluster"
-}
-
-variable "node_count" {
-  description = "Number of nodes in the cluster"
-  type        = number
-  default     = 2
-}
-
-variable "machine_type" {
-  description = "GCP machine type for cluster nodes"
-  type        = string
-  default     = "e2-medium"
 }
 
 variable "lb_ip_name" {
-  description = "Name for static load balancer IP"
+  description = "Existing reserved static IP name"
   type        = string
-  default     = "my-lb-ip-2"
 }
 
 variable "terraform_bucket" {
-  description = "GCS bucket for Terraform state"
+  description = "GCS bucket for storing Terraform state"
   type        = string
-  default     = "my-terraform-state-bucket-anujnamdev271"
 }

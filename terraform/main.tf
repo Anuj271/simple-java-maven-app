@@ -4,45 +4,25 @@ provider "google" {
 }
 
 # --------------------------
-# Create GKE Cluster
+# Reference Existing GKE Cluster (instead of recreating)
 # --------------------------
-resource "google_container_cluster" "primary" {
+data "google_container_cluster" "primary" {
   name     = var.cluster_name
   location = var.zone
-  initial_node_count = var.node_count
-
-  node_config {
-    machine_type = var.machine_type
-    disk_size_gb = 30
-    disk_type    = "pd-standard"
-    oauth_scopes = [
-      "https://www.googleapis.com/auth/cloud-platform",
-    ]
-  }
-
-  # Optional: labels to indicate Terraform provisioned
-  resource_labels = {
-    "goog-terraform-provisioned" = "true"
-  }
-
-  # Avoid accidental deletion in Cloud Console
-  deletion_protection = true
+  project  = var.project
 }
 
 # --------------------------
-# Reserve a static external IP
+# Reference Existing Static External IP
 # --------------------------
-resource "google_compute_address" "lb_ip" {
-  name   = var.lb_ip_name
-  region = var.region
-
-  labels = {
-    "goog-terraform-provisioned" = "true"
-  }
+data "google_compute_address" "lb_ip" {
+  name    = var.lb_ip_name
+  region  = var.region
+  project = var.project
 }
 
 # --------------------------
-# Terraform backend
+# Terraform Backend (Remote State in GCS)
 # --------------------------
 terraform {
   required_providers {
@@ -57,3 +37,4 @@ terraform {
     prefix = "gke-cluster"
   }
 }
+
