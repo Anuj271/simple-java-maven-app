@@ -301,7 +301,7 @@ steps:
   args: ["push", "${_IMAGE}:$SHORT_SHA"]
 
 # --------------------------------------------------------
-# 7. Run Terraform (create GKE + deploy app)
+# 7. Run Terraform (create GKE + deploy infra)
 # --------------------------------------------------------
 - id: "Terraform Apply"
   name: "hashicorp/terraform:1.6.6"
@@ -312,6 +312,22 @@ steps:
       cd terraform
       terraform init
       terraform apply -auto-approve
+
+# --------------------------------------------------------
+# 8. Deploy app manifests (Deployment + Service)
+# --------------------------------------------------------
+- id: "Deploy App to GKE"
+  name: "gcr.io/cloud-builders/kubectl"
+  entrypoint: "sh"
+  args:
+    - "-c"
+    - |
+      echo "Fetching kubeconfig for the GKE cluster..."
+      gcloud container clusters get-credentials my-gke-cluster --region=us-central1 --project=$PROJECT_ID
+      
+      echo "Applying Kubernetes manifests..."
+      kubectl apply -f terraform/deployment.yaml
+      kubectl apply -f terraform/service.yaml
 
 # --------------------------------------------------------
 # 8. Save Maven cache
