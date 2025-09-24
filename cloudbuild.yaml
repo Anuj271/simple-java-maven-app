@@ -312,6 +312,7 @@ steps:
       cd terraform
       terraform init -backend-config="bucket=my-terraform-state-bucket-anujnamdev271" \
                      -backend-config="prefix=gke-cluster"
+      terraform plan
       terraform apply -auto-approve
 
 # --------------------------------------------------------
@@ -323,11 +324,11 @@ steps:
   args:
     - "-c"
     - |
-      echo "Fetching GKE cluster credentials..."
+      echo "Fetching GKE credentials..."
       gcloud container clusters get-credentials cb-gke-cluster \
         --zone us-central1-a \
         --project $PROJECT_ID
-      echo "Deploying application manifests..."
+      echo "Deploying app manifests..."
       kubectl apply -f terraform/deployment.yaml
       kubectl apply -f terraform/service.yaml
 
