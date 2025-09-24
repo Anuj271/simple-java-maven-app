@@ -1,7 +1,9 @@
 variable "project" {
   description = "GCP project ID"
   type        = string
+  default     = "my-hello-cb"   # <--- Add your GCP project ID here
 }
+
 
 variable "region" {
   description = "GCP region"
