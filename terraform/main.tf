@@ -30,8 +30,15 @@ resource "google_compute_address" "lb_ip" {
   region = var.region
 }
 terraform {
+  required_providers {
+    google = {
+      source  = "hashicorp/google"
+      version = ">= 4.0"
+    }
+  }
   backend "gcs" {
-    bucket  = "my-terraform-state-bucket-anujnamdev271"   # create this bucket first
-    prefix  = "gke-cluster"
+    bucket = "my-terraform-state-bucket-anujnamdev271"
+    prefix = "gke-cluster"
   }
 }
+
