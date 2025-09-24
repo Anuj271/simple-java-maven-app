@@ -29,3 +29,9 @@ resource "google_compute_address" "lb_ip" {
   name   = "my-lb-ip-2"
   region = var.region
 }
+terraform {
+  backend "gcs" {
+    bucket  = "my-terraform-state-bucket-anujnamdev271"   # create this bucket first
+    prefix  = "gke-cluster"
+  }
+}
