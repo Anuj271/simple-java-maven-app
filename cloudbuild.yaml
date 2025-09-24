@@ -335,6 +335,7 @@ steps:
       gcloud container clusters get-credentials cb-gke-cluster \
         --zone us-central1-a \
         --project $PROJECT_ID
+      sed -i "s|REPLACE_ME|${_IMAGE}:$SHORT_SHA|g" terraform/deployment.yaml  
       echo "Deploying app manifests..."
       kubectl apply -f terraform/deployment.yaml
       kubectl apply -f terraform/service.yaml
