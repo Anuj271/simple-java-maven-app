@@ -322,10 +322,7 @@ steps:
   args:
     - "-c"
     - |
-      echo "Fetching kubeconfig for the GKE cluster..."
-      gcloud container clusters get-credentials my-gke-cluster --region=us-central1 --project=$PROJECT_ID
-      
-      echo "Applying Kubernetes manifests..."
+      gcloud container clusters get-credentials cb-gke-cluster --zone us-central1-a --project=$PROJECT_ID
       kubectl apply -f terraform/deployment.yaml
       kubectl apply -f terraform/service.yaml
 
