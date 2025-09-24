@@ -218,7 +218,7 @@
 
 # cloudbuild.yaml -- Terraform + GKE deployment
 
-timeout: "1200s"   # Build timeout = 20 minutes (you can increase if needed)
+timeout: "1200s"   # Build timeout = 20 minutes
 
 substitutions:
   _IMAGE: "docker.io/anujnamdev/my-java-app"
@@ -232,7 +232,7 @@ availableSecrets:
       env: "DOCKER_PASSWORD"
 
 options:
-  logging: CLOUD_LOGGING_ONLY   # send logs only to Cloud Logging (cleaner builds)
+  logging: CLOUD_LOGGING_ONLY
 
 steps:
 
@@ -290,7 +290,7 @@ steps:
   args:
     - "-c"
     - |
-      echo "Attempting docker login..."
+      echo "Logging into Docker Hub..."
       echo "$$DOCKER_PASSWORD" | docker login --username "$$DOCKER_USERNAME" --password-stdin
 
 # --------------------------------------------------------
@@ -301,7 +301,7 @@ steps:
   args: ["push", "${_IMAGE}:$SHORT_SHA"]
 
 # --------------------------------------------------------
-# 7. Run Terraform (create GKE + deploy infra)
+# 7. Terraform apply (only for non-cluster resources)
 # --------------------------------------------------------
 - id: "Terraform Apply"
   name: "hashicorp/terraform:1.6.6"
@@ -310,7 +310,8 @@ steps:
     - "-c"
     - |
       cd terraform
-      terraform init
+      terraform init -backend-config="bucket=my-terraform-state-bucket-anujnamdev271" \
+                     -backend-config="prefix=gke-cluster"
       terraform apply -auto-approve
 
 # --------------------------------------------------------
@@ -318,16 +319,20 @@ steps:
 # --------------------------------------------------------
 - id: "Deploy App to GKE"
   name: "gcr.io/cloud-builders/kubectl"
-  entrypoint: "sh"
+  entrypoint: "bash"
   args:
     - "-c"
     - |
-      gcloud container clusters get-credentials cb-gke-cluster --zone us-central1-a --project=$PROJECT_ID
+      echo "Fetching cluster credentials..."
+      gcloud container clusters get-credentials cb-gke-cluster \
+        --zone us-central1-a \
+        --project $PROJECT_ID
+      echo "Deploying application manifests..."
       kubectl apply -f terraform/deployment.yaml
       kubectl apply -f terraform/service.yaml
 
 # --------------------------------------------------------
-# 8. Save Maven cache
+# 9. Save Maven cache
 # --------------------------------------------------------
 - id: "Save Maven Cache"
   name: "gcr.io/cloud-builders/gsutil"
@@ -335,7 +340,7 @@ steps:
   args:
     - "-c"
     - |
-      echo "Saving Maven cache to GCS..."
+      echo "Saving Maven cache back to GCS..."
       gsutil -m rsync -r "/root/.m2/" "${_CACHE_BUCKET}/m2/"
   volumes:
     - name: "maven-cache"
