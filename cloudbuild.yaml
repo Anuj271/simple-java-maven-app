@@ -133,39 +133,6 @@ steps:
         --set adminPassword='admin123' \
         --set service.type=LoadBalancer
 
-- id: "Get Grafana External IP"
-  name: "gcr.io/cloud-builders/kubectl"
-  entrypoint: "bash"
-  args:
-    - "-c"
-    - |
-      # Fetch GKE credentials
-      gcloud container clusters get-credentials cb-gke-cluster \
-        --zone us-central1-a \
-        --project $PROJECT_ID
-
-      # Wait for the external IP to be assigned
-      echo "Waiting for Grafana external IP..."
-      for i in {1..20}; do
-        GRAFANA_IP=$(kubectl get svc grafana -n monitoring -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-        if [ -n "$GRAFANA_IP" ]; then
-          echo "====================================="
-          echo "Grafana is available at: http://$GRAFANA_IP:3000"
-          echo "====================================="
-          # Save to workspace if needed for later steps
-          echo "$GRAFANA_IP" > /workspace/grafana-ip.txt
-          break
-        fi
-        echo "Still waiting... retry in 15s"
-        sleep 15
-      done
-
-      if [ -z "$GRAFANA_IP" ]; then
-        echo "❌ Failed to get Grafana external IP"
-        exit 1
-      fi
-
-
 
 # --------------------------------------------------------
 # 9. Deploy app manifests (Deployment + Service)
