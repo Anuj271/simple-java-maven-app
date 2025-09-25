@@ -137,6 +137,9 @@ steps:
 # --------------------------------------------------------
 # 8.1 Get Grafana External IP
 # --------------------------------------------------------
+# --------------------------------------------------------
+# 8.1 Get Grafana External IP
+# --------------------------------------------------------
 - id: "Get Grafana External IP"
   name: "gcr.io/cloud-builders/kubectl"
   entrypoint: "bash"
@@ -150,18 +153,19 @@ steps:
 
       echo "Waiting for Grafana service to get external IP..."
       for i in {1..20}; do
-        EXTERNAL_IP=$(kubectl get svc grafana -n monitoring -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-        if [ -n "$EXTERNAL_IP" ]; then
-          echo "Grafana External IP: $EXTERNAL_IP"
+        IP=$(kubectl get svc grafana -n monitoring -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+        if [ -n "$IP" ]; then
+          echo "Grafana External IP: $IP"
           break
         fi
         echo "Waiting 15s for external IP..."
         sleep 15
       done
 
-      if [ -z "$EXTERNAL_IP" ]; then
+      if [ -z "$IP" ]; then
         echo "Failed to get Grafana external IP."
       fi
+
 
 
 # --------------------------------------------------------
