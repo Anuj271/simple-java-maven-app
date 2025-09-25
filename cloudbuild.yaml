@@ -133,9 +133,6 @@ steps:
         --set adminPassword='admin123' \
         --set service.type=LoadBalancer
 
-# --------------------------------------------------------
-# 8.1 Get Grafana External IP
-# --------------------------------------------------------
 - id: "Get Grafana External IP"
   name: "gcr.io/cloud-builders/kubectl"
   entrypoint: "bash"
@@ -147,17 +144,15 @@ steps:
         --zone us-central1-a \
         --project $PROJECT_ID
 
-      echo "Waiting for Grafana service external IP..."
+      echo "Waiting for Grafana external IP..."
       for i in {1..20}; do
-        IP=$(kubectl get svc grafana -n monitoring -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-        if [ -n "$IP" ]; then
-          echo "====================================="
-          echo "Grafana is available at: http://$IP:3000"
-          echo "====================================="
-          echo "$IP" > /workspace/grafana-ip.txt
+        EXTERNAL_IP=$(kubectl get svc grafana -n monitoring -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+        if [ -n "$EXTERNAL_IP" ]; then
+          echo "Grafana is available at: http://$EXTERNAL_IP:3000"
+          echo "$EXTERNAL_IP" > /workspace/grafana-ip.txt
           break
         fi
-        echo "Still waiting... retry in 15s"
+        echo "Waiting 15s for external IP..."
         sleep 15
       done
 
@@ -165,7 +160,6 @@ steps:
         echo "❌ Failed to get Grafana external IP"
         exit 1
       fi
-
 
 
 # --------------------------------------------------------
