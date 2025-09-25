@@ -133,7 +133,6 @@ steps:
         --set adminPassword='admin123' \
         --set service.type=LoadBalancer
 
-
 # --------------------------------------------------------
 # 8.1 Get Grafana External IP
 # --------------------------------------------------------
@@ -150,18 +149,19 @@ steps:
 
       echo "Waiting for Grafana service external IP..."
       for i in {1..20}; do
-        GRAFANA_IP=$(kubectl get svc grafana -n monitoring -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-        if [ -n "$GRAFANA_IP" ]; then
+        IP=$(kubectl get svc grafana -n monitoring -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+        if [ -n "$IP" ]; then
           echo "====================================="
-          echo "Grafana is available at: http://$GRAFANA_IP:3000"
+          echo "Grafana is available at: http://$IP:3000"
           echo "====================================="
+          echo "$IP" > /workspace/grafana-ip.txt
           break
         fi
         echo "Still waiting... retry in 15s"
         sleep 15
       done
 
-      if [ -z "$GRAFANA_IP" ]; then
+      if [ ! -f /workspace/grafana-ip.txt ]; then
         echo "❌ Failed to get Grafana external IP"
         exit 1
       fi
