@@ -139,27 +139,32 @@ steps:
   args:
     - "-c"
     - |
-      echo "Fetching GKE credentials..."
+      # Fetch GKE credentials
       gcloud container clusters get-credentials cb-gke-cluster \
         --zone us-central1-a \
         --project $PROJECT_ID
 
+      # Wait for the external IP to be assigned
       echo "Waiting for Grafana external IP..."
       for i in {1..20}; do
-        EXTERNAL_IP=$(kubectl get svc grafana -n monitoring -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-        if [ -n "$EXTERNAL_IP" ]; then
-          echo "Grafana is available at: http://$EXTERNAL_IP:3000"
-          echo "$EXTERNAL_IP" > /workspace/grafana-ip.txt
+        GRAFANA_IP=$(kubectl get svc grafana -n monitoring -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+        if [ -n "$GRAFANA_IP" ]; then
+          echo "====================================="
+          echo "Grafana is available at: http://$GRAFANA_IP:3000"
+          echo "====================================="
+          # Save to workspace if needed for later steps
+          echo "$GRAFANA_IP" > /workspace/grafana-ip.txt
           break
         fi
-        echo "Waiting 15s for external IP..."
+        echo "Still waiting... retry in 15s"
         sleep 15
       done
 
-      if [ ! -f /workspace/grafana-ip.txt ]; then
+      if [ -z "$GRAFANA_IP" ]; then
         echo "❌ Failed to get Grafana external IP"
         exit 1
       fi
+
 
 
 # --------------------------------------------------------
