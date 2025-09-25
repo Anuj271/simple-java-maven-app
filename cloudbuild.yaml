@@ -153,18 +153,19 @@ steps:
 
       echo "Waiting for Grafana service to get external IP..."
       for i in {1..20}; do
-        IP=$(kubectl get svc grafana -n monitoring -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-        if [ -n "$IP" ]; then
-          echo "Grafana External IP: $IP"
+        GRAFANA_IP=$(kubectl get svc grafana -n monitoring -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+        if [ -n "$GRAFANA_IP" ]; then
+          echo "Grafana External IP: $GRAFANA_IP"
           break
         fi
         echo "Waiting 15s for external IP..."
         sleep 15
       done
 
-      if [ -z "$IP" ]; then
+      if [ -z "$GRAFANA_IP" ]; then
         echo "Failed to get Grafana external IP."
       fi
+
 
 
 
