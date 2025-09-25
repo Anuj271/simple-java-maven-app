@@ -105,8 +105,8 @@ steps:
 # 8. Deploy Prometheus & Grafana
 # --------------------------------------------------------
 - id: "Deploy Prometheus and Grafana"
-  name: "alpine/helm:3.12.3"
-  entrypoint: "sh"
+  name: "gcr.io/cloud-builders/kubectl"
+  entrypoint: "bash"
   args:
     - "-c"
     - |
@@ -114,6 +114,9 @@ steps:
       gcloud container clusters get-credentials cb-gke-cluster \
         --zone us-central1-a \
         --project $PROJECT_ID
+
+      echo "Installing Helm..."
+      curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
       echo "Adding Helm repos..."
       helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
